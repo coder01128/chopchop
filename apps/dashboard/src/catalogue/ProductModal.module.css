@@ -1,0 +1,293 @@
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: rgba(0, 0, 0, 0.55);
+  display: grid;
+  place-items: start center;
+  padding: 0;
+  overflow-y: auto;
+}
+
+.dialog {
+  width: 100%;
+  max-width: 52rem;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 0;
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.head {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.8rem 1rem;
+  background: var(--panel);
+  border-bottom: 1px solid var(--line);
+}
+
+.title {
+  margin: 0;
+  font-size: 1.1rem;
+  letter-spacing: -0.01em;
+}
+
+.headActions {
+  display: flex;
+  gap: 0.5rem;
+  flex: 0 0 auto;
+}
+
+.ghost,
+.primary {
+  border-radius: var(--radius);
+  padding: 0.5rem 0.85rem;
+  font-family: var(--mono);
+  font-size: 0.64rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.ghost {
+  background: transparent;
+  border: 1px solid var(--line);
+  color: var(--ink);
+}
+
+.ghost:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.primary {
+  background: var(--accent);
+  border: 1px solid var(--accent);
+  color: var(--accent-ink);
+  font-weight: 700;
+}
+
+.primary:disabled,
+.ghost:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.loading {
+  padding: 2rem 1rem;
+  text-align: center;
+  opacity: 0.75;
+}
+
+.body {
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.universal {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+}
+
+.leftColumn,
+.rightColumn {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.28rem;
+}
+
+.field > span {
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink);
+  opacity: 0.72;
+}
+
+.field input,
+.field textarea,
+.field select {
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 0.5rem 0.6rem;
+  color: var(--ink);
+  width: 100%;
+  resize: vertical;
+}
+
+.field input[aria-invalid='true'] {
+  border-color: var(--danger);
+}
+
+.preview {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  background: var(--fill);
+}
+
+.preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.preview[data-empty] span {
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  opacity: 0.6;
+}
+
+.toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.88rem;
+  cursor: pointer;
+}
+
+.banner {
+  margin: 0;
+  border: 1px solid var(--accent);
+  border-radius: var(--radius);
+  padding: 0.6rem 0.75rem;
+  font-size: 0.88rem;
+  color: var(--accent);
+}
+
+.errorList {
+  border: 1px solid var(--danger);
+  border-radius: var(--radius);
+  padding: 0.7rem 0.85rem;
+}
+
+.errorHead {
+  margin: 0 0 0.35rem;
+  color: var(--danger);
+  font-size: 0.88rem;
+}
+
+.errorList ul {
+  margin: 0;
+  padding-left: 1.1rem;
+  font-size: 0.85rem;
+}
+
+.failure {
+  margin: 0;
+  color: var(--danger);
+  font-size: 0.88rem;
+}
+
+/* ── removal confirmation ── */
+
+.confirmBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: rgba(0, 0, 0, 0.6);
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+}
+
+.confirm {
+  width: 100%;
+  max-width: 32rem;
+  max-height: 90vh;
+  overflow-y: auto;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 1.1rem 1.2rem;
+}
+
+.confirmTitle {
+  margin: 0 0 0.7rem;
+  font-size: 1.05rem;
+}
+
+.confirmGroup {
+  border-top: 1px solid var(--line);
+  padding-top: 0.7rem;
+  margin-top: 0.7rem;
+}
+
+.confirmGroup[data-tone='blocked'] .confirmLead {
+  color: var(--danger);
+}
+
+.confirmLead {
+  margin: 0 0 0.4rem;
+  font-size: 0.88rem;
+  opacity: 0.88;
+}
+
+.confirmGroup ul {
+  margin: 0;
+  padding-left: 1.1rem;
+  font-size: 0.86rem;
+}
+
+.count {
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.1em;
+  opacity: 0.7;
+}
+
+.confirmActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+@media (min-width: 44rem) {
+  .backdrop {
+    padding: 1.5rem;
+    place-items: center;
+  }
+
+  .dialog {
+    min-height: 0;
+    max-height: calc(100vh - 3rem);
+    overflow-y: auto;
+    border-radius: var(--radius);
+  }
+
+  .head {
+    padding: 0.9rem 1.25rem;
+  }
+
+  .body {
+    padding: 1.25rem;
+  }
+
+  .universal {
+    grid-template-columns: 1.4fr 1fr;
+  }
+}

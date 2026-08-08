@@ -1,0 +1,302 @@
+.editor {
+  border-top: 1px solid var(--line);
+  padding-top: 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.sectionHead {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.sectionTitle {
+  margin: 0;
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.hint {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--ink);
+  opacity: 0.7;
+}
+
+.attributes {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 0.7rem 0.8rem 0.8rem;
+  margin: 0;
+}
+
+.legend {
+  padding: 0 0.35rem;
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink);
+  opacity: 0.75;
+}
+
+.chipRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 0.32rem 0.7rem;
+  background: var(--bg);
+  font-size: 0.86rem;
+  cursor: pointer;
+  user-select: none;
+}
+
+.chip[data-on] {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.chip[data-locked] {
+  cursor: not-allowed;
+  opacity: 0.75;
+}
+
+.retired,
+.saved {
+  font-family: var(--mono);
+  font-size: 0.54rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 0.1rem 0.3rem;
+  border-radius: 2px;
+  background: var(--fill);
+  color: var(--ink);
+}
+
+.bulk {
+  border: 1px dashed var(--line);
+  border-radius: var(--radius);
+  padding: 0.7rem 0.8rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  /* Pinned above the stack — bulk fill matters more on a phone, not less. */
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--panel);
+}
+
+.bulkRow {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.5rem;
+}
+
+.bulkField {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.bulkField > span,
+.field > span {
+  font-family: var(--mono);
+  font-size: 0.58rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink);
+  opacity: 0.72;
+}
+
+.bulkField input,
+.field input[type='number'],
+.field input[type='text'] {
+  width: 100%;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 0.45rem 0.55rem;
+  color: var(--ink);
+  min-width: 0;
+}
+
+.bulkButton {
+  flex: 0 0 auto;
+  background: transparent;
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  border-radius: var(--radius);
+  padding: 0.45rem 0.8rem;
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.bulkButton:disabled {
+  border-color: var(--line);
+  color: var(--ink);
+  opacity: 0.45;
+  cursor: default;
+}
+
+.bulkOverwrite {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.8rem;
+  opacity: 0.85;
+  cursor: pointer;
+}
+
+.empty {
+  margin: 0;
+  padding: 1rem;
+  border: 1px dashed var(--line);
+  border-radius: var(--radius);
+  text-align: center;
+  opacity: 0.75;
+}
+
+/* One attribute or none renders as rows; two or more as a grid of cells.
+   Below the breakpoint everything is a single stack — a nine-cell matrix does
+   not survive a phone screen. */
+.cells {
+  display: grid;
+  gap: 0.6rem;
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 48rem) {
+  .cells[data-layout='grid'] {
+    grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+  }
+}
+
+.cell {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 0.7rem 0.8rem;
+  background: var(--bg);
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.cell[data-new] {
+  border-style: dashed;
+  border-color: var(--accent);
+}
+
+.cell[data-invalid] {
+  border-color: var(--danger);
+}
+
+.cellHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.cellTitle {
+  font-weight: 600;
+  font-size: 0.92rem;
+}
+
+.newFlag {
+  font-family: var(--mono);
+  font-size: 0.54rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  background: var(--accent);
+  color: var(--accent-ink);
+  border-radius: 2px;
+  padding: 0.12rem 0.34rem;
+}
+
+.fields {
+  display: grid;
+  gap: 0.5rem;
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 30rem) {
+  .cells[data-layout='rows'] .fields {
+    grid-template-columns: 1fr 1fr 1fr;
+    align-items: end;
+  }
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.moneyInput {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 0 0.55rem;
+}
+
+.moneyInput > span {
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  opacity: 0.7;
+}
+
+.moneyInput input {
+  border: none;
+  background: transparent;
+  padding: 0.45rem 0;
+  width: 100%;
+  min-width: 0;
+  color: var(--ink);
+}
+
+.moneyInput input:focus {
+  outline: none;
+}
+
+.moneyInput:focus-within {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.toggleField {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.86rem;
+  cursor: pointer;
+}
+
+.cellError {
+  margin: 0;
+  color: var(--danger);
+  font-size: 0.8rem;
+}

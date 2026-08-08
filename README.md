@@ -38,6 +38,28 @@ component reads `var(--accent)`. Shared tokens live in
 `packages/shared/src/theme.css`. No tenant's name or colour appears as a literal
 anywhere in either app.
 
+### The variant editor
+
+`apps/dashboard/src/catalogue/` — the screen the white-label claim rests on. A
+butchery gets two priced rows out of it and a shoe shop gets a nine-cell grid,
+from one component with no branch for either.
+
+The rules live in `variant-model.ts` as pure functions and are tested in
+`tests/variant-model.test.ts` (`npm test`), so the claim is checkable without a
+browser. The one that governs everything, from `SCHEMA.md`:
+
+> `attribute_schema` is a palette, not a mandate.
+
+The tenant row lists the attributes *available*. Which attributes a product uses
+is derived from the keys on that product's own variants. A shoe shop that starts
+stocking wide fittings does not grow an empty `width` selector on every product
+it has ever sold.
+
+Only two things branch on tenant config: the attribute list, and the row anatomy
+(`sale_mode` decides decimal vs whole quantities and the price label,
+`stock_mode` decides a stock field vs an in-stock toggle). If a third appears,
+the abstraction is leaking.
+
 ### Which tenant?
 
 The **dashboard** resolves it from the signed-in user's `tenant_users` row. No

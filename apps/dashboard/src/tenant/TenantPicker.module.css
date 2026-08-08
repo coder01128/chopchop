@@ -63,7 +63,8 @@
   font-family: var(--mono);
   font-size: 0.72rem;
   font-weight: 700;
-  color: #12120f;
+  /* ink is set inline per tenant — no tenant has resolved yet, so there is no
+     --accent-ink on the document to read */
 }
 
 .name {

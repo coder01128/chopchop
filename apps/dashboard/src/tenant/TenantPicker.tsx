@@ -1,4 +1,4 @@
-import { initialsFor, safeAccent, type TenantRow } from '@chopchop/shared';
+import { initialsFor, inkOn, safeAccent, type TenantRow } from '@chopchop/shared';
 import styles from './TenantPicker.module.css';
 
 /**
@@ -27,12 +27,14 @@ export function TenantPicker({
         <p className={styles.blurb}>This login is linked to more than one.</p>
 
         <ul className={styles.list}>
-          {options.map((tenant) => (
+          {options.map((tenant) => {
+            const accent = safeAccent((tenant.branding as { primary?: string })?.primary);
+            return (
             <li key={tenant.id}>
               <button className={styles.option} type="button" onClick={() => onPick(tenant.id)}>
                 <span
                   className={styles.mark}
-                  style={{ background: safeAccent((tenant.branding as { primary?: string })?.primary) }}
+                  style={{ background: accent, color: inkOn(accent) }}
                   aria-hidden="true"
                 >
                   {initialsFor(tenant.name)}
@@ -41,7 +43,8 @@ export function TenantPicker({
                 <span className={styles.slug}>{tenant.slug}</span>
               </button>
             </li>
-          ))}
+            );
+          })}
         </ul>
       </div>
     </main>

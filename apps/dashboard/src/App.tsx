@@ -3,7 +3,8 @@ import { AuthProvider, useAuth } from './auth/AuthProvider';
 import { SignIn } from './auth/SignIn';
 import { TenantGate } from './tenant/TenantGate';
 import { Shell } from './shell/Shell';
-import { Catalogue, Import, Orders } from './routes/Placeholder';
+import { Import, Orders } from './routes/Placeholder';
+import { CataloguePage } from './catalogue/CataloguePage';
 import { Settings } from './routes/Settings';
 import { Notice } from './ui/Notice';
 
@@ -26,7 +27,7 @@ function Protected() {
       <Routes>
         <Route element={<Shell />}>
           <Route path="/orders" element={<Orders />} />
-          <Route path="/catalogue" element={<Catalogue />} />
+          <Route path="/catalogue" element={<CataloguePage />} />
           <Route path="/import" element={<Import />} />
           <Route path="/settings" element={<Settings />} />
           {/* Orders is the default landing screen — wireframe section 01. */}

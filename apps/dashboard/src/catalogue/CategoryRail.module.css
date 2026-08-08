@@ -1,0 +1,192 @@
+.rail {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  min-width: 0;
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.title {
+  margin: 0;
+  font-family: var(--mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.addButton,
+.miniButton,
+.dangerButton {
+  border-radius: var(--radius);
+  padding: 0.35rem 0.6rem;
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  background: transparent;
+  border: 1px solid var(--line);
+  color: var(--ink);
+  flex: 0 0 auto;
+}
+
+.addButton:hover,
+.miniButton:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.dangerButton {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.entryRow {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.entry {
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  min-width: 0;
+  background: transparent;
+  border: 1px solid transparent;
+  border-left: 2px solid transparent;
+  border-radius: var(--radius);
+  padding: 0.45rem 0.55rem;
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+}
+
+.entry:hover {
+  background: var(--panel2);
+}
+
+.entry[data-selected] {
+  background: var(--panel2);
+  border-left-color: var(--accent);
+  color: var(--accent);
+}
+
+.entry[data-inactive] .entryName {
+  opacity: 0.5;
+  text-decoration: line-through;
+}
+
+.entryName {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.92rem;
+}
+
+.count {
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  opacity: 0.65;
+  flex: 0 0 auto;
+}
+
+.entryTools {
+  display: flex;
+  gap: 0.1rem;
+  flex: 0 0 auto;
+}
+
+.tool {
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  color: var(--ink);
+  opacity: 0.55;
+  cursor: pointer;
+  font-size: 0.72rem;
+  line-height: 1;
+  padding: 0.25rem 0.3rem;
+}
+
+.tool:hover:not(:disabled) {
+  opacity: 1;
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.tool:disabled {
+  opacity: 0.2;
+  cursor: default;
+}
+
+.renameRow {
+  display: flex;
+  gap: 0.3rem;
+  align-items: center;
+}
+
+.renameRow input {
+  flex: 1 1 auto;
+  min-width: 0;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 0.4rem 0.5rem;
+  color: var(--ink);
+}
+
+.confirmBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: rgba(0, 0, 0, 0.6);
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+}
+
+.confirm {
+  width: 100%;
+  max-width: 26rem;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 1.1rem 1.2rem;
+}
+
+.confirmTitle {
+  margin: 0 0 0.6rem;
+  font-size: 1.02rem;
+}
+
+.confirmBody {
+  margin: 0 0 0.5rem;
+  font-size: 0.88rem;
+  opacity: 0.85;
+}
+
+.confirmActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 0.9rem;
+}
