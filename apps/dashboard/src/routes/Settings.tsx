@@ -41,7 +41,7 @@ export function Settings() {
   return (
     <section className={styles.screen}>
       <p className="cc-eyebrow">Read only for now</p>
-      <h1 className={styles.heading}>{tenant.label('settings', 'Settings')}</h1>
+      <h1 className={styles.heading}>Settings</h1>
       <p className={styles.blurb}>
         Everything this business does is driven by these values, not by code. Editing them is a
         later ticket.

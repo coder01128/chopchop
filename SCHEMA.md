@@ -48,6 +48,21 @@ One attribute → one row per option. Two attributes → the full grid (3 × 3 =
 variants). Zero attributes → a single default variant, which is how a vacuum
 cleaner works.
 
+**`attribute_schema` is a palette, not a mandate.** It lists the attributes
+*available* to that tenant. Which attributes a given product actually uses is
+derived from the keys present on that product's own variants.
+
+This matters when a tenant gains a new attribute — say a shoe shop starts
+stocking wide fittings, so `width` joins `size` and `colour`. Existing products
+keep `{size, colour}` and stay valid forever; only products created or edited
+afterwards use the new dimension. Nothing regenerates, nothing is migrated, and
+no bulk edit can wreck live prices.
+
+The consequence binds both apps: **the storefront and the variant editor render
+their selectors from the item's own variant keys, never from
+`attribute_schema` directly.** Reading the tenant palette instead would sprout an
+empty `width` selector on every old product the day the schema changes.
+
 Values written to `variants.attributes` are validated against this list before
 save. Postgres will not police it — the app must, or you get `navy` and `Navy`
 as separate variants.
@@ -245,9 +260,14 @@ beyond its own orders, and cannot list `orders` at all.
 
 ## Buyer identity
 
-The storefront calls `signInAnonymously()` on first visit. That creates a real
-auth user carrying the `authenticated` role with an `is_anonymous` claim in the
-JWT, and the session persists on the device.
+The storefront calls `signInAnonymously()` **lazily, at checkout — not on first
+visit.** Browsing runs on the `anon` role against the public catalogue policies,
+so `auth.users` grows in proportion to orders rather than to traffic. Anonymous
+sign-ins drive MAU cost and are the thing captcha exists to throttle; don't mint
+one for every window shopper.
+
+At checkout the buyer becomes a real auth user carrying the `authenticated` role
+with an `is_anonymous` claim in the JWT, and the session persists on the device.
 
 This exists because a buyer's order status page needs **Realtime**, and Realtime
 respects RLS — Postgres Changes only pushes a row to clients whose policies let
@@ -258,10 +278,29 @@ them. A `SECURITY DEFINER` function can fetch one order, but a function is not a
 subscription, so the buyer page would have to poll. `buyer_id = auth.uid()` is a
 per-row check, so it works with Realtime and needs no function.
 
+**Two catalogue paths exist and both are needed.** Before checkout the buyer is
+`anon`. After checkout they hold a session, so every later request — including
+catalogue reads on a repeat visit — arrives as `authenticated`. The authenticated
+catalogue policies are gated on `is_anonymous_user()`, and that gate is
+load-bearing: ungated, "authenticated may read active items" ORs with the tenant
+policy and hands every dashboard user every tenant's catalogue.
+
+A buyer may list their own orders. `using (buyer_id = (select auth.uid()))` on an
+unfiltered select returns their own rows and nothing else, which is the intended
+behaviour — the buyer's order history costs nothing extra and the alternative
+costs Realtime.
+
 Consequences to hold onto:
 
 - Anonymous sign-ins must be enabled in the dashboard.
-- Anonymous users accumulate in `auth.users`. They need periodic cleanup.
+- Anonymous users accumulate in `auth.users` and need periodic cleanup in
+  production, not just the seed's sweep. `buyer_id` is `on delete set null` so
+  cleanup never takes the seller's order history with it.
+- Buyers may only insert orders at `status = 'sent'` with null timestamps. The
+  ceiling lives in the policy's `WITH CHECK`, not in column grants — buyers share
+  the `authenticated` role with dashboard users, so grants can't separate them.
+- Realtime DELETE events are not delivered without `REPLICA IDENTITY FULL`.
+  Nothing deletes orders, so the default stands.
 - The buyer sees their own past orders for free — the session is the identity.
 
 ---

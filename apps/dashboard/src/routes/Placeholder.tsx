@@ -1,27 +1,26 @@
-import { useTenant } from '@chopchop/shared';
 import styles from './Placeholder.module.css';
 
 /**
  * Empty screens for the four nav sections. Ticket 02 builds the skeleton only —
  * anything that would render a product or an order belongs to a later ticket,
  * so these stop at the route.
+ *
+ * Headings are fixed English, matching the nav: `branding.labels` is the
+ * client's customer-facing vocabulary and applies to the storefront only.
  */
 export function Placeholder({
-  labelKey,
-  fallback,
+  title,
   ticket,
   blurb,
 }: {
-  labelKey: string;
-  fallback: string;
+  title: string;
   ticket: string;
   blurb: string;
 }) {
-  const tenant = useTenant();
   return (
     <section className={styles.screen}>
       <p className="cc-eyebrow">{ticket}</p>
-      <h1 className={styles.heading}>{tenant.label(labelKey, fallback)}</h1>
+      <h1 className={styles.heading}>{title}</h1>
       <p className={styles.blurb}>{blurb}</p>
     </section>
   );
@@ -29,8 +28,7 @@ export function Placeholder({
 
 export const Orders = () => (
   <Placeholder
-    labelKey="orders"
-    fallback="Orders"
+    title="Orders"
     ticket="Not built yet"
     blurb="The order queue, its status flow and the prefilled WhatsApp reply land in a later ticket."
   />
@@ -38,8 +36,7 @@ export const Orders = () => (
 
 export const Catalogue = () => (
   <Placeholder
-    labelKey="catalogue"
-    fallback="Catalogue"
+    title="Catalogue"
     ticket="Not built yet"
     blurb="Categories, items and the variant editor generated from attribute_schema land in a later ticket."
   />
@@ -47,8 +44,7 @@ export const Catalogue = () => (
 
 export const Import = () => (
   <Placeholder
-    labelKey="import"
-    fallback="Import"
+    title="Import"
     ticket="Not built yet"
     blurb="Spreadsheet import first, then vision — both behind a review gate — land in a later ticket."
   />

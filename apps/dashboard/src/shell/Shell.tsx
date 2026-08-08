@@ -11,15 +11,19 @@ import styles from './Shell.module.css';
  * because the seller is on a phone behind a counter far more often than at a
  * desk. Both are the same nav list rendered twice by CSS, not two components.
  *
- * Nothing here is hardcoded per client. Name, mark and accent come from the
- * tenant row; the nav labels go through `tenant.label()` so a client whose
- * buyers read Afrikaans gets "Spyskaart" without a code change.
+ * Name, mark and accent come from the tenant row. The nav labels deliberately
+ * do not: `branding.labels` is the client's customer-facing vocabulary —
+ * "Spyskaart", "Mandjie" — and it applies to the storefront only. The dashboard
+ * is Brad's product, not the client's brand surface, so its nav and controls
+ * use fixed wording. A customer-facing word leaking into an internal tool is a
+ * bug. If a translated dashboard is ever wanted, that is a locale field, not a
+ * branding override.
  */
 const NAV = [
-  { to: '/orders', labelKey: 'orders', fallback: 'Orders' },
-  { to: '/catalogue', labelKey: 'catalogue', fallback: 'Catalogue' },
-  { to: '/import', labelKey: 'import', fallback: 'Import' },
-  { to: '/settings', labelKey: 'settings', fallback: 'Settings' },
+  { to: '/orders', label: 'Orders' },
+  { to: '/catalogue', label: 'Catalogue' },
+  { to: '/import', label: 'Import' },
+  { to: '/settings', label: 'Settings' },
 ] as const;
 
 export function Shell() {
@@ -37,7 +41,7 @@ export function Shell() {
       to={entry.to}
       className={({ isActive }) => (isActive ? `${styles.navLink} ${styles.navLinkActive}` : styles.navLink)}
     >
-      {tenant.label(entry.labelKey, entry.fallback)}
+      {entry.label}
     </NavLink>
   ));
 
