@@ -11,11 +11,12 @@ run on identical code — the difference lives entirely in their `tenants` row.
 ## Stack
 
 - Postgres via Supabase (single shared project, all tenants)
-- Supabase Auth (dashboard users only; buyers never log in)
-- Supabase Realtime (order status → PWA)
+- Supabase Auth — sellers sign in with email/password; **buyers are anonymous
+  auth users**, signed in lazily at checkout (see Buyer identity in `SCHEMA.md`)
+- Supabase Realtime (order status → buyer's status page)
 - Supabase Edge Functions (anything needing a secret key)
 - React + Vite, deployed on Vercel
-- No CSS framework decision is locked yet — see Open Questions
+- CSS Modules + CSS custom properties — see Styling
 
 ## Layout
 
@@ -32,9 +33,14 @@ run on identical code — the difference lives entirely in their `tenants` row.
 
 ## Non-negotiables
 
-**RLS on every table, no exceptions.** Every policy filters on `tenant_id`.
-A table without RLS is a data breach with a delay on it. Public catalogue read
-is the only anonymous access, and it is read-only.
+**RLS on every table, no exceptions.** Every tenant-scoped policy filters on
+`tenant_id`. A table without RLS is a data breach with a delay on it.
+
+The `anon` role gets read-only access to the public catalogue and nothing else.
+Buyers reach their own orders as anonymous **auth** users via
+`buyer_id = auth.uid()`, not as the `anon` role — which is why every
+tenant-scoped table also carries a restrictive not-anonymous policy. Anonymous
+auth users hold `authenticated`, and permissive policies combine with OR.
 
 **The leak test is a release gate.** `/tests/tenant-leak.test.ts` authenticates
 as tenant A and queries every table asserting zero tenant B rows. It runs before
@@ -86,6 +92,13 @@ Four fields on `tenants` drive everything:
 | `sale_mode` | `unit` (whole numbers, final total) or `weight` (decimal qty, total is an estimate until confirmed) |
 | `stock_mode` | `availability` (in-stock toggle) or `counted` (decrements on confirm) |
 | `branding` | name, colours, logo, labels, WhatsApp number |
+
+**`branding.labels` applies to the storefront only.** It is the client's
+customer-facing vocabulary — "Spyskaart", "Mandjie". The dashboard is Brad's
+product, not the client's brand surface, so its nav and controls use fixed
+wording. A customer-facing word leaking into an internal tool is a bug. If a
+translated dashboard is ever wanted, that is a locale field, not a branding
+override.
 
 Adding a client = one tenants row + one login + a domain. No code, no migration,
 no new database. If onboarding a client requires a code change, the abstraction
@@ -144,9 +157,23 @@ Courier is not implemented.
 
 ---
 
+## Styling
+
+**CSS Modules plus CSS custom properties. No framework.** Decided in ticket 02.
+
+Branding is not applied *with* CSS variables, it *is* CSS variables:
+`applyBranding()` writes `--accent` and `--accent-ink` onto the document root
+when the tenant resolves, and components read `var(--accent)`. Shared tokens —
+palette, type, spacing, breakpoints — live in `packages/shared/src/theme.css`.
+Component styles are `Component.module.css` beside the component.
+
+A colour or a tenant name written as a literal in a component is the same bug as
+a component that knows the word `meat`.
+
+---
+
 ## Open questions — do not guess these
 
-- Styling approach for the two apps
 - Whether the dashboard is one deployment on a shared domain (planned) or
   per-client subdomains
 - Domain for the dashboard

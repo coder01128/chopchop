@@ -1,0 +1,21 @@
+.initials {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  border-radius: 4px;
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-family: var(--mono);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  user-select: none;
+}
+
+.logo {
+  display: block;
+  flex: 0 0 auto;
+  border-radius: 4px;
+  object-fit: cover;
+  background: var(--fill);
+}

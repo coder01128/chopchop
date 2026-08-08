@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "dashboard",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev:dashboard"],
+      "port": 5173
+    },
+    {
+      "name": "storefront",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev:storefront"],
+      "port": 5174
+    }
+  ]
+}

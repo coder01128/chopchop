@@ -1,0 +1,82 @@
+/*
+ * Shared design tokens for both apps.
+ *
+ * `--accent` and `--accent-ink` are placeholders: applyBranding() overwrites
+ * them on the document root once the tenant resolves. Everything else is fixed
+ * chrome, identical for every tenant, which is what lets one deployment serve
+ * all of them.
+ *
+ * CLAUDE.md: on dark backgrounds text is off-white or accent, never
+ * grey-on-grey. `--muted` is for non-text furniture — rules, borders, disabled
+ * marks — not for body copy.
+ */
+:root {
+  --accent: #c9a227;
+  --accent-ink: #12120f;
+
+  --bg: #12120f;
+  --panel: #1b1b17;
+  --panel2: #232320;
+  --line: #38382f;
+  --ink: #e9e6dd;
+  --muted: #9c9789;
+  --fill: #2e2e27;
+  --fill2: #43433a;
+  --wa: #25d366;
+  --danger: #e2725b;
+
+  --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+
+  --rail-width: 15rem;
+  --tabbar-height: 3.75rem;
+  --radius: 4px;
+
+  color-scheme: dark;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--sans);
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  color: var(--accent);
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.cc-eyebrow {
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--accent);
+}

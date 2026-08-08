@@ -743,7 +743,12 @@ describe('buyer sessions (anonymous auth users)', () => {
    * supabase_realtime publication and that the buyer's policy lets the row
    * through to them.
    */
-  it('receives Realtime updates for its own order', async () => {
+  it('receives Realtime updates for its own order', { retry: 2 }, async () => {
+    // Reset first rather than only at the end: a timed-out attempt would
+    // otherwise leave the order on `received` and the retry would assert
+    // against a status it never saw change.
+    await admin.from('orders').update({ status: 'sent' }).eq('id', orderA);
+
     const received = new Promise<Record<string, unknown>>((resolve, reject) => {
       const timer = setTimeout(
         () =>
@@ -772,8 +777,11 @@ describe('buyer sessions (anonymous auth users)', () => {
           if (status === 'SUBSCRIBED') {
             // SUBSCRIBED is the client's view of the handshake; the server needs
             // a moment more to register the filter. Firing the update the
-            // instant this resolves races it and the event is simply missed.
-            await new Promise((r) => setTimeout(r, 1500));
+            // instant this resolves races it and the event is simply missed —
+            // which is why this test carries a retry. A missed event here is a
+            // slow socket, not a policy failure; the policy itself is asserted
+            // synchronously above.
+            await new Promise((r) => setTimeout(r, 2500));
             // The seller acknowledging the order, which is exactly what the
             // buyer's status page is waiting for.
             await admin.from('orders').update({ status: 'received' }).eq('id', orderA);

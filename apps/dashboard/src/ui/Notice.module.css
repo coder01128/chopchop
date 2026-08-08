@@ -1,0 +1,47 @@
+.screen {
+  min-height: 100%;
+  display: grid;
+  place-items: center;
+  padding: 2rem 1.25rem;
+}
+
+.card {
+  width: 100%;
+  max-width: 28rem;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 1.5rem;
+  text-align: left;
+}
+
+.card[data-tone='error'] {
+  border-color: var(--danger);
+}
+
+.title {
+  margin: 0;
+  font-size: 1.2rem;
+  letter-spacing: -0.01em;
+}
+
+.body {
+  margin: 0.6rem 0 0;
+  color: var(--ink);
+  opacity: 0.78;
+  font-size: 0.92rem;
+}
+
+.action {
+  margin-top: 1.1rem;
+  background: transparent;
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  border-radius: var(--radius);
+  padding: 0.5rem 0.9rem;
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  cursor: pointer;
+}

@@ -1,0 +1,79 @@
+.screen {
+  min-height: 100%;
+  display: grid;
+  place-items: center;
+  padding: 2rem 1.25rem;
+}
+
+.card {
+  width: 100%;
+  max-width: 26rem;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 1.6rem 1.5rem;
+}
+
+.heading {
+  margin: 0.35rem 0 0;
+  font-size: 1.4rem;
+}
+
+.blurb {
+  margin: 0.3rem 0 1.1rem;
+  color: var(--ink);
+  opacity: 0.72;
+  font-size: 0.9rem;
+}
+
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.option {
+  width: 100%;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 0.75rem;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 0.7rem 0.8rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.option:hover {
+  border-color: var(--accent);
+}
+
+.mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: var(--radius);
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #12120f;
+}
+
+.name {
+  font-size: 0.98rem;
+}
+
+.slug {
+  font-family: var(--mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.1em;
+  color: var(--ink);
+  opacity: 0.6;
+}

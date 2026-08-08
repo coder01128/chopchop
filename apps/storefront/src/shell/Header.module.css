@@ -1,0 +1,42 @@
+.header {
+  border-bottom: 1px solid var(--line);
+  background: var(--panel);
+}
+
+.inner {
+  max-width: 60rem;
+  margin: 0 auto;
+  padding: 0.9rem 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+}
+
+.text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.name {
+  font-size: 1.15rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tagline {
+  font-family: var(--mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+@media (min-width: 40rem) {
+  .inner {
+    padding: 1.1rem 1.5rem;
+  }
+}

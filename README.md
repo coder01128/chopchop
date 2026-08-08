@@ -6,6 +6,67 @@ the data contract.
 
 ---
 
+## Apps
+
+npm workspaces. `npm install` at the root installs everything.
+
+```
+apps/dashboard/      seller app — ONE deployment for all tenants
+apps/storefront/     buyer PWA — deployed per client, own domain
+packages/shared/     Supabase client, tenant context, branding, generated types
+```
+
+```bash
+npm run dev:dashboard    # http://localhost:5173
+```
+
+```bash
+npm run dev:storefront   # http://localhost:5174/<tenant-slug>
+```
+
+`npm run build` builds both; `npm run typecheck` type-checks both.
+
+Neither app constructs a Supabase client of its own — `getSupabaseClient()` in
+`packages/shared` is the only one, and it reads `VITE_SUPABASE_URL` and
+`VITE_SUPABASE_PUBLISHABLE_KEY` and nothing else. Both Vite configs point
+`envDir` at the repo root so one `.env` serves the apps and the node scripts.
+
+**Styling: CSS Modules plus CSS custom properties.** No framework. Tenant
+branding *is* a set of custom properties — `applyBranding()` writes `--accent`
+and `--accent-ink` onto the document root once the tenant resolves, and every
+component reads `var(--accent)`. Shared tokens live in
+`packages/shared/src/theme.css`. No tenant's name or colour appears as a literal
+anywhere in either app.
+
+### Which tenant?
+
+The **dashboard** resolves it from the signed-in user's `tenant_users` row. No
+row shows a "no business linked" screen; more than one shows a picker (v1 never
+produces that, but the schema allows it).
+
+The **storefront** resolves it from the URL: the first path segment if there is
+one, otherwise `VITE_TENANT_SLUG`. Production is one deployment per client on
+their own domain, so the env var is the real mechanism; the path segment is what
+lets one dev server serve both demo tenants. It reads the tenant as the `anon`
+role and does **not** sign in anonymously — per `SCHEMA.md` that happens lazily
+at checkout, so a passer-by who never orders never mints an auth user.
+
+### Create a seller login
+
+Sellers never self-register — there is no sign-up screen and no invite mail
+(email confirmation is on and the built-in SMTP is not production grade). Create
+the login directly:
+
+```bash
+node scripts/create-seller.mjs --email ross@example.com --password '…' --tenant demo-butchery --role owner
+```
+
+Re-running for an existing email links that user to the tenant instead of
+failing. Run it through `node` rather than `npm run create-seller --`, which
+does not forward flags reliably on Windows.
+
+---
+
 ## Database
 
 Everything below assumes `.env` exists with the three variables from

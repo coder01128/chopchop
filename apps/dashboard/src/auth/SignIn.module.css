@@ -1,0 +1,83 @@
+.screen {
+  min-height: 100%;
+  display: grid;
+  place-items: center;
+  padding: 2rem 1.25rem;
+}
+
+.card {
+  width: 100%;
+  max-width: 25rem;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 1.75rem 1.5rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.heading {
+  margin: 0.35rem 0 0;
+  font-size: 1.6rem;
+  letter-spacing: -0.02em;
+}
+
+.blurb {
+  margin: 0 0 0.4rem;
+  color: var(--ink);
+  opacity: 0.72;
+  font-size: 0.9rem;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.field > span {
+  font-family: var(--mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.field input {
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 0.65rem 0.7rem;
+  color: var(--ink);
+}
+
+.field input:disabled {
+  opacity: 0.6;
+}
+
+.error {
+  margin: 0;
+  color: var(--danger);
+  font-size: 0.88rem;
+}
+
+.submit {
+  margin-top: 0.4rem;
+  background: var(--accent);
+  color: var(--accent-ink);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius);
+  padding: 0.7rem 1rem;
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.submit:disabled {
+  cursor: default;
+  opacity: 0.65;
+}

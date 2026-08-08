@@ -1,0 +1,183 @@
+/*
+ * Mobile-first. The rail does not exist until there is room for it; below the
+ * breakpoint the same nav is a bottom tab bar, which is where a thumb is.
+ */
+
+.layout {
+  min-height: 100%;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  /* room for the fixed tab bar, plus the home indicator on iOS */
+  padding-bottom: calc(var(--tabbar-height) + env(safe-area-inset-bottom, 0px));
+}
+
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.7rem 1rem;
+  background: var(--panel);
+  border-bottom: 1px solid var(--line);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-width: 0;
+}
+
+.brandName {
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.account {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex: 0 0 auto;
+}
+
+.email {
+  display: none;
+  font-family: var(--mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.06em;
+  color: var(--ink);
+  opacity: 0.68;
+}
+
+.signOut {
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  color: var(--ink);
+  padding: 0.35rem 0.7rem;
+  font-family: var(--mono);
+  font-size: 0.64rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.signOut:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.content {
+  padding: 1.25rem 1rem 2rem;
+  min-width: 0;
+}
+
+/* ── nav, shared by both presentations ── */
+
+.navLink {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  text-decoration: none;
+  color: var(--ink);
+  font-family: var(--mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.navLinkActive {
+  color: var(--accent);
+}
+
+/* ── under the breakpoint: bottom tab bar ── */
+
+.rail {
+  display: none;
+}
+
+.tabbar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 20;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  height: calc(var(--tabbar-height) + env(safe-area-inset-bottom, 0px));
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  background: var(--panel);
+  border-top: 1px solid var(--line);
+}
+
+.tabbar .navLink {
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.58rem;
+  border-top: 2px solid transparent;
+}
+
+.tabbar .navLinkActive {
+  border-top-color: var(--accent);
+  background: var(--panel2);
+}
+
+/* ── above the breakpoint: left rail ── */
+
+@media (min-width: 48rem) {
+  .layout {
+    grid-template-columns: var(--rail-width) 1fr;
+    grid-template-rows: auto 1fr;
+    padding-bottom: 0;
+  }
+
+  .topbar {
+    grid-column: 1 / -1;
+    padding: 0.8rem 1.5rem;
+  }
+
+  .email {
+    display: inline;
+  }
+
+  .rail {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    padding: 1.25rem 0.75rem;
+    border-right: 1px solid var(--line);
+    background: var(--panel);
+  }
+
+  .rail .navLink {
+    justify-content: flex-start;
+    padding: 0.6rem 0.75rem;
+    border-radius: var(--radius);
+    border-left: 2px solid transparent;
+  }
+
+  .rail .navLink:hover {
+    background: var(--panel2);
+  }
+
+  .rail .navLinkActive {
+    background: var(--panel2);
+    border-left-color: var(--accent);
+  }
+
+  .content {
+    padding: 1.75rem 1.5rem 3rem;
+  }
+
+  .tabbar {
+    display: none;
+  }
+}

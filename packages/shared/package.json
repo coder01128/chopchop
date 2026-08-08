@@ -1,0 +1,17 @@
+{
+  "name": "@chopchop/shared",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./types": "./types/db.ts",
+    "./theme.css": "./src/theme.css"
+  },
+  "peerDependencies": {
+    "react": "^19.0.0"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.58.0"
+  }
+}

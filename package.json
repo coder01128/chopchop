@@ -3,10 +3,19 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
   "scripts": {
     "db:push": "supabase db push",
     "db:types": "supabase gen types typescript --linked --schema public > packages/shared/types/db.ts",
     "db:seed": "node scripts/seed.mjs",
+    "create-seller": "node scripts/create-seller.mjs",
+    "dev:dashboard": "npm run dev --workspace @chopchop/dashboard",
+    "dev:storefront": "npm run dev --workspace @chopchop/storefront",
+    "build": "npm run build --workspaces --if-present",
+    "typecheck": "tsc --noEmit -p apps/dashboard && tsc --noEmit -p apps/storefront",
     "test": "vitest run",
     "test:leak": "vitest run tests/tenant-leak.test.ts"
   },
