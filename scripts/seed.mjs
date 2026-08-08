@@ -25,15 +25,38 @@ import { DEMO_PASSWORD, DEMO_USERS, DEMO_SLUGS } from './demo-users.mjs';
 
 const url = process.env.VITE_SUPABASE_URL;
 const secret = process.env.SUPABASE_SECRET_KEY;
+const publishable = process.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
-if (!url || !secret) {
-  console.error('Missing VITE_SUPABASE_URL or SUPABASE_SECRET_KEY in .env');
+if (!url || !secret || !publishable) {
+  console.error(
+    'Missing VITE_SUPABASE_URL, SUPABASE_SECRET_KEY or VITE_SUPABASE_PUBLISHABLE_KEY in .env',
+  );
   process.exit(1);
 }
 
 const db = createClient(url, secret, {
   auth: { persistSession: false, autoRefreshToken: false },
 });
+
+/**
+ * A demo buyer. Anonymous auth users can only be created by signing in as one —
+ * there is no admin equivalent — so this goes through the publishable key like
+ * a real storefront visitor does.
+ */
+async function createAnonymousBuyer(label) {
+  const client = createClient(url, publishable, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+  const { data, error } = await client.auth.signInAnonymously();
+  if (error) {
+    console.error(
+      `\n  anonymous sign-in for ${label} failed: ${error.message}` +
+        '\n  Enable it: Supabase dashboard -> Authentication -> Sign In / Up -> Anonymous sign-ins.',
+    );
+    process.exit(1);
+  }
+  return data.user.id;
+}
 
 /** Throw with context instead of returning a null row nobody checks. */
 function ok(label, { data, error }) {
@@ -161,7 +184,24 @@ for (const user of userPage.users.filter((u) => demoEmails.includes(u.email))) {
     process.exit(1);
   }
 }
-console.log('done');
+
+// Anonymous buyers accumulate in auth.users — SCHEMA.md flags this as needing
+// periodic cleanup. The tenant wipe above has just orphaned every buyer whose
+// orders lived in a demo tenant, so sweep those. An anonymous user still
+// attached to an order is left alone.
+const { data: liveOrders } = await db.from('orders').select('buyer_id').not('buyer_id', 'is', null);
+const stillReferenced = new Set((liveOrders ?? []).map((o) => o.buyer_id));
+let sweptBuyers = 0;
+for (const user of userPage.users) {
+  if (!user.is_anonymous || stillReferenced.has(user.id)) continue;
+  const { error } = await db.auth.admin.deleteUser(user.id);
+  if (error) {
+    console.error(`\n  deleteUser(anonymous ${user.id}) failed: ${error.message}`);
+    process.exit(1);
+  }
+  sweptBuyers += 1;
+}
+console.log(`done (${sweptBuyers} orphaned anonymous buyer(s) swept)`);
 
 // ---------------------------------------------------------------------------
 // Build
@@ -295,7 +335,13 @@ ok('insert shoes variants', await db.from('variants').insert(shoesVariantRows));
 // Orders — two per tenant at different statuses, including a `sent` order that
 // will never be confirmed. That is the phantom the dashboard has to let the
 // seller dismiss.
+//
+// Every order carries a buyer_id: that is the buyer's anonymous auth session,
+// and it is what their status page reads and subscribes to.
 // ---------------------------------------------------------------------------
+
+const butcheryBuyerId = await createAnonymousBuyer('demo-butchery');
+const shoesBuyerId = await createAnonymousBuyer('demo-shoes');
 
 /** Look up a seeded variant by item name and attributes. */
 async function variantId(tenantId, itemName, attributes) {
@@ -334,6 +380,7 @@ await createOrder(
   b.tenant.id,
   {
     reference: 'A47',
+    buyer_id: butcheryBuyerId,
     customer_name: 'Thandi Mokoena',
     customer_phone: '27835551212',
     fulfilment: 'collect',
@@ -366,6 +413,7 @@ await createOrder(
   b.tenant.id,
   {
     reference: 'A48',
+    buyer_id: butcheryBuyerId,
     customer_name: 'Pieter van Wyk',
     customer_phone: '27826667777',
     fulfilment: 'collect',
@@ -402,6 +450,7 @@ await createOrder(
   s.tenant.id,
   {
     reference: 'S12',
+    buyer_id: shoesBuyerId,
     customer_name: 'Aisha Patel',
     customer_phone: '27842223333',
     fulfilment: 'local_delivery',
@@ -434,6 +483,7 @@ await createOrder(
   s.tenant.id,
   {
     reference: 'S13',
+    buyer_id: shoesBuyerId,
     customer_name: 'Sipho Dlamini',
     customer_phone: '27718889999',
     fulfilment: 'local_delivery',
@@ -456,14 +506,49 @@ await createOrder(
 );
 
 // ---------------------------------------------------------------------------
+// One pending import batch per tenant. Extraction output lands here for review
+// and never writes to items or variants directly — the review gate is the whole
+// point. Seeded mainly so the leak test's import_batches assertions have rows
+// to fail on; an empty table passes every isolation check ever written.
+// ---------------------------------------------------------------------------
+
+ok(
+  'insert import_batches',
+  await db.from('import_batches').insert([
+    {
+      tenant_id: b.tenant.id,
+      source: 'spreadsheet',
+      status: 'pending',
+      raw: [
+        { name: 'Ribeye', unit: 'per kg', price: '219.90' },
+        { name: 'Ribeye', unit: 'per pack', price: '109.95' },
+        { name: 'Short Rib', unit: 'per kg', price: '149.90' },
+      ],
+    },
+    {
+      tenant_id: s.tenant.id,
+      source: 'vision',
+      status: 'pending',
+      raw: [
+        { name: 'Trail Mid', size: '7', colour: 'black', price: '1099.00' },
+        { name: 'Trail Mid', size: '8', colour: 'black', price: '1099.00' },
+      ],
+    },
+  ]),
+);
+
+// ---------------------------------------------------------------------------
 
 console.log(`
-  demo-butchery   ${butcheryCategories.length} categories, ${butcheryItems.length} items, ${butcheryVariantRows.length} variants, 2 orders
-  demo-shoes      ${shoesCategories.length} categories, ${shoesItems.length} items, ${shoesVariantRows.length} variants, 2 orders
+  demo-butchery   ${butcheryCategories.length} categories, ${butcheryItems.length} items, ${butcheryVariantRows.length} variants, 2 orders, 1 import batch
+  demo-shoes      ${shoesCategories.length} categories, ${shoesItems.length} items, ${shoesVariantRows.length} variants, 2 orders, 1 import batch
 
   logins          ${DEMO_USERS.butchery.email}
                   ${DEMO_USERS.shoes.email}
                   password from DEMO_USER_PASSWORD, or the default in scripts/demo-users.mjs
+
+  buyers          2 anonymous auth users, one per tenant, attached to the orders above.
+                  Their sessions are not reproducible — the leak test creates its own.
 
   Seeded. Now run: npm run test:leak
 `);

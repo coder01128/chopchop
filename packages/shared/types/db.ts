@@ -192,6 +192,7 @@ export type Database = {
       }
       orders: {
         Row: {
+          buyer_id: string | null
           completed_at: string | null
           confirmed_at: string | null
           created_at: string
@@ -206,6 +207,7 @@ export type Database = {
           total: number
         }
         Insert: {
+          buyer_id?: string | null
           completed_at?: string | null
           confirmed_at?: string | null
           created_at?: string
@@ -220,6 +222,7 @@ export type Database = {
           total?: number
         }
         Update: {
+          buyer_id?: string | null
           completed_at?: string | null
           confirmed_at?: string | null
           created_at?: string
@@ -370,8 +373,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      get_order: { Args: { p_order_id: string }; Returns: Json }
       is_active_tenant: { Args: { p_tenant_id: string }; Returns: boolean }
+      is_anonymous_user: { Args: never; Returns: boolean }
+      is_buyer_order: { Args: { p_order_id: string }; Returns: boolean }
+      item_is_active: { Args: { p_item_id: string }; Returns: boolean }
       order_belongs_to_tenant: {
         Args: { p_order_id: string; p_tenant_id: string }
         Returns: boolean

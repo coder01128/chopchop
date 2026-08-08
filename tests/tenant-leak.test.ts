@@ -311,121 +311,292 @@ describe('anonymous storefront', () => {
     ).not.toBeNull();
   });
 
-  it('reads a single order by id through get_order(), and only that order', async () => {
+  it('cannot place an order — the anon role has no orders grant at all', async () => {
     const anon = anonClient();
-    const { data, error } = await anon.rpc('get_order', { p_order_id: butcheryOrderId });
-    expect(error, `get_order failed: ${error?.message}`).toBeNull();
-    expect(data, 'get_order returned nothing for a known order id').not.toBeNull();
-    expect((data as { id: string }).id).toBe(butcheryOrderId);
-    expect(Array.isArray((data as { items: unknown[] }).items)).toBe(true);
+    const { error } = await anon.from('orders').insert({
+      tenant_id: butcheryId,
+      reference: `X-${Date.now()}`,
+      customer_name: 'Leak Test',
+      customer_phone: '27820000000',
+      fulfilment: 'collect',
+      total: 0,
+    });
+    expect(
+      error,
+      'The anon role can still insert orders. Buyers are anonymous auth users ' +
+        'now; the anon grants on orders were dropped in migration 0005.',
+    ).not.toBeNull();
   });
 
-  it('get_order() returns nothing for an id it was not given', async () => {
+  it('no longer exposes get_order()', async () => {
     const anon = anonClient();
-    const { data } = await anon.rpc('get_order', {
-      p_order_id: '00000000-0000-0000-0000-000000000000',
-    });
-    expect(data, 'get_order returned an order for a bogus id').toBeNull();
+    const { error } = await anon.rpc('get_order', { p_order_id: butcheryOrderId });
+    expect(
+      error,
+      'get_order() is still callable. It was replaced by a buyer_id policy so ' +
+        'the status page can use Realtime instead of polling.',
+    ).not.toBeNull();
   });
 });
 
-describe('anonymous order creation', () => {
-  const created: string[] = [];
+/**
+ * Buyer sessions.
+ *
+ * A buyer is an anonymous auth user, which means it holds the `authenticated`
+ * role — the same role as every dashboard login. Permissive policies combine
+ * with OR, so the whole of this block exists to prove that being authenticated
+ * buys a buyer nothing beyond the public catalogue and their own orders.
+ */
+describe('buyer sessions (anonymous auth users)', () => {
+  const createdOrders: string[] = [];
+  const createdBuyers: string[] = [];
 
-  afterAll(async () => {
-    for (const id of created) {
-      await admin.from('orders').delete().eq('id', id);
+  let buyerA: SupabaseClient;
+  let buyerAId: string;
+  let buyerB: SupabaseClient;
+  let buyerBId: string;
+  let orderA: string;
+  let orderB: string;
+
+  async function newBuyer(): Promise<[SupabaseClient, string]> {
+    const client = anonClient();
+    const { data, error } = await client.auth.signInAnonymously();
+    if (error) {
+      throw new Error(
+        `Anonymous sign-in failed: ${error.message}. Enable it in the Supabase ` +
+          'dashboard: Authentication -> Sign In / Up -> Anonymous sign-ins.',
+      );
     }
-  });
+    createdBuyers.push(data.user!.id);
+    return [client, data.user!.id];
+  }
 
-  it('can place an order and its lines against an active tenant', async () => {
-    const anon = anonClient();
+  /** Place an order the way the storefront will: as the buyer, in one session. */
+  async function place(
+    client: SupabaseClient,
+    buyerId: string,
+    tenantId: string,
+    label: string,
+  ): Promise<string> {
     const orderId = crypto.randomUUID();
-
     const { data: variant } = await admin
       .from('variants')
       .select('id, price')
-      .eq('tenant_id', butcheryId)
+      .eq('tenant_id', tenantId)
       .limit(1)
       .single();
 
-    const { error: orderError } = await anon.from('orders').insert({
+    const { error: orderError } = await client.from('orders').insert({
       id: orderId,
-      tenant_id: butcheryId,
-      reference: 'T01',
-      customer_name: 'Leak Test Buyer',
+      tenant_id: tenantId,
+      buyer_id: buyerId,
+      reference: `LT-${label}-${Date.now().toString().slice(-6)}`,
+      customer_name: `Leak Test Buyer ${label}`,
       customer_phone: '27820000000',
       fulfilment: 'collect',
       notes: 'placed by tenant-leak.test.ts',
       total: variant!.price,
     });
-    expect(orderError, `anonymous order insert failed: ${orderError?.message}`).toBeNull();
-    created.push(orderId);
+    if (orderError) throw new Error(`buyer ${label} could not place an order: ${orderError.message}`);
+    createdOrders.push(orderId);
 
-    const { error: lineError } = await anon.from('order_items').insert({
-      tenant_id: butcheryId,
+    const { error: lineError } = await client.from('order_items').insert({
+      tenant_id: tenantId,
       order_id: orderId,
       variant_id: variant!.id,
-      name_snapshot: 'Leak Test Line',
+      name_snapshot: `Leak Test Line ${label}`,
       price_snapshot: variant!.price,
       qty: 1,
       line_total: variant!.price,
     });
-    expect(lineError, `anonymous order_items insert failed: ${lineError?.message}`).toBeNull();
+    if (lineError) throw new Error(`buyer ${label} could not add a line: ${lineError.message}`);
 
-    // and can then read exactly that order back
-    const { data } = await anon.rpc('get_order', { p_order_id: orderId });
-    expect((data as { id: string } | null)?.id).toBe(orderId);
+    return orderId;
+  }
+
+  beforeAll(async () => {
+    [buyerA, buyerAId] = await newBuyer();
+    [buyerB, buyerBId] = await newBuyer();
+    orderA = await place(buyerA, buyerAId, butcheryId, 'A');
+    orderB = await place(buyerB, buyerBId, shoesId, 'B');
   });
 
-  it('cannot set status on an order it creates', async () => {
-    const anon = anonClient();
-    const { error } = await anon.from('orders').insert({
+  afterAll(async () => {
+    for (const id of createdOrders) await admin.from('orders').delete().eq('id', id);
+    for (const id of createdBuyers) await admin.auth.admin.deleteUser(id);
+    await buyerA?.auth.signOut();
+    await buyerB?.auth.signOut();
+  });
+
+  it('reads its own order, with its lines', async () => {
+    const { data, error } = await buyerA.from('orders').select('*').eq('id', orderA);
+    expect(error, `buyer could not read its own order: ${error?.message}`).toBeNull();
+    expect(data ?? [], 'A buyer cannot see the order it just placed.').toHaveLength(1);
+
+    const { data: lines } = await buyerA.from('order_items').select('*').eq('order_id', orderA);
+    expect((lines ?? []).length, 'A buyer cannot see its own order lines.').toBeGreaterThan(0);
+  });
+
+  it('listing orders unfiltered returns nothing but its own', async () => {
+    const { data, error } = await buyerA.from('orders').select('*');
+    expect(error, `unfiltered buyer order read failed: ${error?.message}`).toBeNull();
+
+    const foreign = (data ?? []).filter((row) => row.buyer_id !== buyerAId);
+    expect(
+      foreign,
+      `BUYER CAN LIST OTHER ORDERS: ${foreign.length} row(s) not belonging to this ` +
+        `buyer were returned from "orders". Offending ids: ${foreign.map((r) => r.id).join(', ')}`,
+    ).toHaveLength(0);
+    expect(
+      (data ?? []).some((r) => r.id === orderA),
+      'The buyer cannot see its own order in an unfiltered list.',
+    ).toBe(true);
+  });
+
+  it('cannot read another buyer\'s order, even by id', async () => {
+    const { data } = await buyerA.from('orders').select('*').eq('id', orderB);
+    expect(
+      data ?? [],
+      `BUYER LEAK in "orders": buyer A read buyer B's order ${orderB} by id.`,
+    ).toEqual([]);
+  });
+
+  it('cannot read another buyer\'s order lines', async () => {
+    const { data } = await buyerA.from('order_items').select('*').eq('order_id', orderB);
+    expect(
+      data ?? [],
+      `BUYER LEAK in "order_items": buyer A read lines from buyer B's order ${orderB}.`,
+    ).toEqual([]);
+  });
+
+  it('cannot see the seeded demo orders', async () => {
+    const { data } = await buyerA.from('orders').select('id, reference');
+    const seeded = (data ?? []).filter((r) => ['A47', 'A48', 'S12', 'S13'].includes(r.reference));
+    expect(
+      seeded,
+      `BUYER LEAK in "orders": seeded orders ${seeded.map((r) => r.reference).join(', ')} ` +
+        'were visible to a buyer session.',
+    ).toHaveLength(0);
+  });
+
+  // The grant exists (buyers hold `authenticated`), so these are empty results
+  // rather than refusals. The restrictive policies are what produce them.
+  for (const table of ['tenant_users', 'import_batches'] as const) {
+    it(`reads nothing from ${table}`, async () => {
+      const { data } = await buyerA.from(table).select('*');
+      expect(
+        data ?? [],
+        `BUYER LEAK in "${table}": ${(data ?? []).length} row(s) reached a buyer ` +
+          'session. The restrictive not-anonymous policy is not holding.',
+      ).toEqual([]);
+    });
+  }
+
+  it('reads the public catalogue and nothing more from it', async () => {
+    const { data: items, error } = await buyerA.from('items').select('id, active, tenant_id');
+    expect(error, `buyer catalogue read failed: ${error?.message}`).toBeNull();
+    expect((items ?? []).length, 'A buyer session sees an empty catalogue.').toBeGreaterThan(0);
+
+    const inactive = (items ?? []).filter((r) => r.active === false);
+    expect(
+      inactive,
+      `INACTIVE ITEMS VISIBLE to a buyer session: ${inactive.length} row(s).`,
+    ).toHaveLength(0);
+
+    for (const table of ['tenants', 'categories', 'items', 'variants'] as const) {
+      const column = table === 'tenants' ? 'id' : 'tenant_id';
+      const { data } = await buyerA.from(table).select('*').eq(column, inactiveTenantId);
+      expect(
+        data ?? [],
+        `INACTIVE TENANT LEAK in "${table}": rows reached a buyer session.`,
+      ).toEqual([]);
+    }
+  });
+
+  it('cannot place an order under another buyer\'s id', async () => {
+    const { error } = await buyerA.from('orders').insert({
       id: crypto.randomUUID(),
       tenant_id: butcheryId,
-      reference: 'T02',
-      customer_name: 'Leak Test Buyer',
+      buyer_id: buyerBId,
+      reference: `LT-STEAL-${Date.now().toString().slice(-6)}`,
+      customer_name: 'Leak Test',
       customer_phone: '27820000000',
       fulfilment: 'collect',
       total: 0,
-      status: 'completed',
     });
     expect(
       error,
-      'A buyer was able to insert an order with status = completed. Revenue ' +
-        'metrics run off that status — the column grant must exclude it.',
+      'A buyer inserted an order under a different buyer_id. The status page is ' +
+        'keyed on buyer_id — that is somebody else\'s order history.',
     ).not.toBeNull();
   });
 
-  it('cannot attach a line to another tenant\'s order', async () => {
-    const anon = anonClient();
-    const { error } = await anon.from('order_items').insert({
+  it('cannot place an order with no buyer_id at all', async () => {
+    const { error } = await buyerA.from('orders').insert({
+      id: crypto.randomUUID(),
+      tenant_id: butcheryId,
+      reference: `LT-NULL-${Date.now().toString().slice(-6)}`,
+      customer_name: 'Leak Test',
+      customer_phone: '27820000000',
+      fulfilment: 'collect',
+      total: 0,
+    });
+    expect(error, 'A buyer inserted an order with a null buyer_id.').not.toBeNull();
+  });
+
+  it('cannot set status, confirmed_at or completed_at when placing an order', async () => {
+    for (const overrides of [
+      { status: 'completed' },
+      { status: 'confirmed' },
+      { confirmed_at: new Date().toISOString() },
+      { completed_at: new Date().toISOString() },
+    ]) {
+      const { error } = await buyerA.from('orders').insert({
+        id: crypto.randomUUID(),
+        tenant_id: butcheryId,
+        buyer_id: buyerAId,
+        reference: `LT-ST-${Math.random().toString(36).slice(2, 8)}`,
+        customer_name: 'Leak Test',
+        customer_phone: '27820000000',
+        fulfilment: 'collect',
+        total: 0,
+        ...overrides,
+      });
+      expect(
+        error,
+        `A buyer placed an order with ${JSON.stringify(overrides)}. Revenue metrics ` +
+          'run off `completed` — that value is the seller\'s to set.',
+      ).not.toBeNull();
+    }
+  });
+
+  it('cannot attach a line to somebody else\'s order', async () => {
+    const { data: variant } = await admin
+      .from('variants')
+      .select('id, price')
+      .eq('tenant_id', shoesId)
+      .limit(1)
+      .single();
+
+    const { error } = await buyerA.from('order_items').insert({
       tenant_id: shoesId,
-      order_id: butcheryOrderId, // belongs to demo-butchery
-      variant_id: (await admin
-        .from('variants')
-        .select('id')
-        .eq('tenant_id', shoesId)
-        .limit(1)
-        .single()).data!.id,
-      name_snapshot: 'Cross-tenant line',
+      order_id: orderB,
+      variant_id: variant!.id,
+      name_snapshot: 'Injected line',
       price_snapshot: 1,
       qty: 1,
       line_total: 1,
     });
-    expect(
-      error,
-      'A line was attached to an order belonging to a different tenant.',
-    ).not.toBeNull();
+    expect(error, 'A buyer added a line to another buyer\'s order.').not.toBeNull();
   });
 
   it('cannot place an order against an inactive tenant', async () => {
-    const anon = anonClient();
-    const { error } = await anon.from('orders').insert({
+    const { error } = await buyerA.from('orders').insert({
       id: crypto.randomUUID(),
       tenant_id: inactiveTenantId,
-      reference: 'T03',
-      customer_name: 'Leak Test Buyer',
+      buyer_id: buyerAId,
+      reference: `LT-INACT-${Date.now().toString().slice(-6)}`,
+      customer_name: 'Leak Test',
       customer_phone: '27820000000',
       fulfilment: 'collect',
       total: 0,
@@ -433,15 +604,192 @@ describe('anonymous order creation', () => {
     expect(error, 'An order was placed against a tenant with active = false.').not.toBeNull();
   });
 
-  it('cannot update or delete anything', async () => {
-    const anon = anonClient();
-    const { error: updateError } = await anon
+  it('cannot update or cancel its own order once sent', async () => {
+    const { data } = await buyerA
+      .from('orders')
+      .update({ status: 'completed' })
+      .eq('id', orderA)
+      .select();
+    expect(
+      data ?? [],
+      'A buyer updated its own order. Once sent, an order is the seller\'s to move.',
+    ).toEqual([]);
+
+    const { data: after } = await admin.from('orders').select('status').eq('id', orderA).single();
+    expect(after!.status, 'The order status changed despite the update being refused.').toBe('sent');
+  });
+
+  it('cannot delete its own order', async () => {
+    const { data } = await buyerA.from('orders').delete().eq('id', orderA).select();
+    expect(data ?? [], 'A buyer deleted its own order.').toEqual([]);
+
+    const { count } = await admin
+      .from('orders')
+      .select('*', { count: 'exact', head: true })
+      .eq('id', orderA);
+    expect(count, 'The order was deleted despite the delete being refused.').toBe(1);
+  });
+
+  it('cannot write to the catalogue', async () => {
+    const { error: itemError } = await buyerA.from('items').insert({
+      tenant_id: butcheryId,
+      name: 'Injected item',
+      active: true,
+    });
+    expect(itemError, 'A buyer inserted an item.').not.toBeNull();
+
+    const { error: categoryError } = await buyerA.from('categories').insert({
+      tenant_id: butcheryId,
+      name: 'Injected category',
+      sort_order: 99,
+      active: true,
+    });
+    expect(categoryError, 'A buyer inserted a category.').not.toBeNull();
+
+    const { data: updated } = await buyerA
       .from('items')
       .update({ name: 'hacked' })
-      .eq('tenant_id', butcheryId);
-    expect(updateError, 'anon was able to UPDATE items').not.toBeNull();
+      .eq('tenant_id', butcheryId)
+      .select();
+    expect(updated ?? [], 'A buyer updated catalogue items.').toEqual([]);
 
-    const { error: deleteError } = await anon.from('items').delete().eq('tenant_id', butcheryId);
-    expect(deleteError, 'anon was able to DELETE items').not.toBeNull();
+    const { error: tenantError } = await buyerA.from('tenant_users').insert({
+      tenant_id: butcheryId,
+      user_id: buyerAId,
+      role: 'owner',
+    });
+    expect(
+      tenantError,
+      'A buyer wrote itself a tenant_users row — that is the whole access model.',
+    ).not.toBeNull();
   });
+
+  /**
+   * The one that actually tests the restrictive policies.
+   *
+   * Every assertion above would pass on the tenant lookup alone — a buyer has
+   * no `tenant_users` row, so the permissive dashboard policies never match and
+   * the restrictive ones are never load-bearing. This grants the buyer a real
+   * `tenant_users` row through the service role, which makes every permissive
+   * dashboard policy match. If the restrictive not-anonymous policies are wrong
+   * or missing, this is where a buyer session inherits the whole tenant.
+   */
+  it('stays shut out even holding a tenant_users row', async () => {
+    const { data: link, error: linkError } = await admin
+      .from('tenant_users')
+      .insert({ tenant_id: butcheryId, user_id: buyerAId, role: 'staff' })
+      .select()
+      .single();
+    expect(linkError, `could not create the fixture link: ${linkError?.message}`).toBeNull();
+
+    try {
+      const { data: users } = await buyerA.from('tenant_users').select('*');
+      expect(
+        users ?? [],
+        'RESTRICTIVE POLICY FAILED on "tenant_users": a buyer session with a ' +
+          'tenant_users row read the tenant\'s user list.',
+      ).toEqual([]);
+
+      const { data: batches } = await buyerA.from('import_batches').select('*');
+      expect(
+        batches ?? [],
+        'RESTRICTIVE POLICY FAILED on "import_batches": a buyer session read ' +
+          'unreviewed extraction output.',
+      ).toEqual([]);
+
+      const { data: orders } = await buyerA.from('orders').select('*');
+      const foreign = (orders ?? []).filter((o) => o.buyer_id !== buyerAId);
+      expect(
+        foreign,
+        `RESTRICTIVE POLICY FAILED on "orders": ${foreign.length} order(s) belonging ` +
+          'to other people reached a buyer session holding a tenant_users row.',
+      ).toEqual([]);
+
+      const { data: lines } = await buyerA.from('order_items').select('*');
+      const foreignLines = (lines ?? []).filter((l) => l.order_id !== orderA);
+      expect(
+        foreignLines,
+        'RESTRICTIVE POLICY FAILED on "order_items": lines from other people\'s ' +
+          'orders reached a buyer session.',
+      ).toEqual([]);
+
+      const { data: items } = await buyerA.from('items').select('id, active');
+      const hidden = (items ?? []).filter((i) => i.active === false);
+      expect(
+        hidden,
+        'RESTRICTIVE POLICY FAILED on "items": a buyer session read inactive ' +
+          'products it should never see.',
+      ).toEqual([]);
+
+      const { data: updated } = await buyerA
+        .from('items')
+        .update({ name: 'hacked' })
+        .eq('tenant_id', butcheryId)
+        .select();
+      expect(
+        updated ?? [],
+        'RESTRICTIVE POLICY FAILED on "items": a buyer session wrote to the ' +
+          'tenant\'s catalogue.',
+      ).toEqual([]);
+    } finally {
+      await admin.from('tenant_users').delete().eq('id', link!.id);
+    }
+  });
+
+  /**
+   * The reason this ticket exists. get_order() could fetch one order, but a
+   * function is not a subscription. Postgres Changes re-evaluates RLS per
+   * subscriber, so this passing means both that `orders` is in the
+   * supabase_realtime publication and that the buyer's policy lets the row
+   * through to them.
+   */
+  it('receives Realtime updates for its own order', async () => {
+    const received = new Promise<Record<string, unknown>>((resolve, reject) => {
+      const timer = setTimeout(
+        () =>
+          reject(
+            new Error(
+              'No Realtime event arrived within 20s for the buyer\'s own order. ' +
+                'Either "orders" is missing from the supabase_realtime publication, ' +
+                'or the buyer\'s SELECT policy does not let the row through.',
+            ),
+          ),
+        20_000,
+      );
+
+      const channel = buyerA
+        .channel(`leak-test-order-${orderA}`)
+        .on(
+          'postgres_changes',
+          { event: 'UPDATE', schema: 'public', table: 'orders', filter: `id=eq.${orderA}` },
+          (payload) => {
+            clearTimeout(timer);
+            void buyerA.removeChannel(channel);
+            resolve(payload.new as Record<string, unknown>);
+          },
+        )
+        .subscribe(async (status) => {
+          if (status === 'SUBSCRIBED') {
+            // SUBSCRIBED is the client's view of the handshake; the server needs
+            // a moment more to register the filter. Firing the update the
+            // instant this resolves races it and the event is simply missed.
+            await new Promise((r) => setTimeout(r, 1500));
+            // The seller acknowledging the order, which is exactly what the
+            // buyer's status page is waiting for.
+            await admin.from('orders').update({ status: 'received' }).eq('id', orderA);
+          }
+          if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+            clearTimeout(timer);
+            reject(new Error(`Realtime subscription failed: ${status}`));
+          }
+        });
+    });
+
+    const row = await received;
+    expect(row.id).toBe(orderA);
+    expect(row.status, 'The Realtime payload did not carry the new status.').toBe('received');
+
+    // put it back so the update/delete assertions above stay meaningful on re-run
+    await admin.from('orders').update({ status: 'sent' }).eq('id', orderA);
+  }, 30_000);
 });
