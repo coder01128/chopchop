@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Layout Wireframe</title>
+<style>
+/* ══════════════════════════════════════════════════════════════
+   PRE-BUILD WIREFRAME TEMPLATE
+   Edit the CONFIG object at the top of the script block below.
+   Everything else is the renderer — leave it alone.
+   ══════════════════════════════════════════════════════════════ */
+:root{
+  --accent:#c9a227;
+  --bg:#12120f; --panel:#1b1b17; --panel2:#232320;
+  --line:#38382f; --ink:#e9e6dd; --muted:#9c9789;
+  --fill:#2e2e27; --fill2:#43433a;
+  --wa:#25D366;
+  --gap:2.5rem; --pad:1.1rem;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+}
+body.light{
+  --bg:#eceae4; --panel:#f7f6f2; --panel2:#e4e1d9;
+  --line:#c3bfb4; --ink:#1b1a16; --muted:#6a655a;
+  --fill:#d2cec4; --fill2:#b8b3a6;
+}
+body.compact{ --gap:1.4rem; --pad:.75rem; }
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.55;
+  transition:background .2s,color .2s}
+.wrap{max-width:1080px;margin:0 auto;padding:3rem 1.5rem 6rem}
+
+/* ── document header ── */
+header.doc{border-bottom:1px solid var(--line);padding-bottom:1.8rem;margin-bottom:2.6rem}
+.eyebrow{font-family:var(--mono);font-size:.7rem;letter-spacing:.16em;text-transform:uppercase;color:var(--accent)}
+h1{font-size:clamp(1.9rem,4.4vw,3rem);line-height:1.03;margin:.55rem 0 .8rem;letter-spacing:-.02em;font-weight:700}
+.meta{font-family:var(--mono);font-size:.74rem;color:var(--muted);line-height:1.95}
+.meta b{color:var(--ink);font-weight:400}
+
+/* ── section shell ── */
+.sec{margin-bottom:var(--gap);border:1px solid var(--line);border-radius:4px;overflow:hidden;background:var(--panel)}
+.sec.off{opacity:.32}
+.sec.off .frame{display:none}
+.sec-head{display:flex;align-items:baseline;gap:.85rem;padding:.7rem 1rem;border-bottom:1px solid var(--line);
+  background:var(--panel2);flex-wrap:wrap}
+.num{font-family:var(--mono);font-size:.72rem;color:var(--accent)}
+.name{font-family:var(--mono);font-size:.77rem;letter-spacing:.09em;text-transform:uppercase}
+.tag{font-family:var(--mono);font-size:.61rem;letter-spacing:.08em;text-transform:uppercase;padding:.15rem .45rem;
+  border:1px solid var(--line);border-radius:2px;color:var(--muted)}
+.tag.sig{color:var(--bg);background:var(--accent);border-color:var(--accent);font-weight:700}
+.tag.wa{color:var(--wa);border-color:var(--wa)}
+.frame{padding:var(--pad);background:repeating-linear-gradient(45deg,transparent,transparent 9px,
+  rgba(128,128,128,.045) 9px,rgba(128,128,128,.045) 18px)}
+.frame>*+*{margin-top:.6rem}
+.desc{padding:.8rem 1rem;font-size:.92rem;color:var(--muted);border-top:1px solid var(--line);outline:none}
+.desc:focus{background:var(--panel2);color:var(--ink)}
+.desc b{color:var(--ink);font-weight:500}
+
+/* ── primitives ── */
+.box{border:1px dashed var(--line);border-radius:3px;display:flex;align-items:center;justify-content:center;
+  font-family:var(--mono);font-size:.65rem;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);
+  text-align:center;padding:.5rem;min-height:34px}
+.box.solid{border-style:solid}
+.box.img{background:linear-gradient(135deg,var(--fill),var(--panel2));border-style:solid}
+.box.unknown{border-style:dashed;opacity:.5;color:var(--accent)}
+.box.start{justify-content:flex-start;text-align:left;padding-left:.7rem}
+.row{display:flex;gap:.6rem;align-items:stretch;flex-wrap:wrap}
+.txt{height:9px;border-radius:2px;background:var(--fill)}
+.txt.lg{height:20px;background:var(--fill2)}
+.txt.xl{height:32px;background:var(--fill2)}
+.btn{border:1px solid var(--accent);color:var(--accent);border-radius:2px;padding:.4rem .8rem;
+  font-family:var(--mono);font-size:.62rem;letter-spacing:.08em;text-transform:uppercase;white-space:nowrap;
+  display:inline-flex;align-items:center}
+.btn.wa{border-color:var(--wa);color:var(--wa)}
+.btn.ghost{border-color:var(--line);color:var(--muted)}
+.navbar{display:flex;align-items:center;justify-content:space-between;gap:1rem;border:1px dashed var(--line);
+  padding:.55rem .8rem;border-radius:3px}
+.mark{width:38px;height:38px;border-radius:50%;border:1px solid var(--accent);color:var(--accent);
+  display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:.48rem;flex:0 0 auto}
+.navlinks{display:flex;gap:1rem;font-family:var(--mono);font-size:.62rem;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--muted)}
+.hero{position:relative;border-radius:3px;border:1px solid var(--line);
+  background:linear-gradient(140deg,var(--fill),var(--panel2));display:flex;flex-direction:column;
+  justify-content:flex-end;padding:1.2rem;overflow:hidden}
+.hero .ghost{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:1rem;
+  font-family:var(--mono);font-size:.65rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);
+  text-align:center}
+.hero .content{position:relative;max-width:72%}
+.hero .content>*+*{margin-top:.5rem}
+.track{display:flex;gap:.6rem;overflow:hidden}
+.card{flex:0 0 148px;min-height:170px;border:1px solid var(--line);border-radius:3px;padding:.65rem;
+  display:flex;flex-direction:column;justify-content:space-between;gap:.5rem;background:var(--panel2)}
+.card.unknown{border-style:dashed;opacity:.5}
+.card .cnum{font-family:var(--mono);font-size:.6rem;color:var(--accent)}
+.card .cname{font-family:var(--mono);font-size:.61rem;letter-spacing:.06em;text-transform:uppercase;color:var(--ink)}
+.grid{display:grid;gap:.6rem}
+.split{display:grid;gap:.6rem}
+.cols{display:grid;gap:.6rem}
+.cols .box{flex-direction:column;gap:.3rem;min-height:76px}
+.cols .big{color:var(--accent);font-size:.72rem}
+.note{font-family:var(--mono);font-size:.6rem;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);
+  display:flex;align-items:center;gap:.5rem}
+.note:before{content:"";flex:1;height:1px;background:linear-gradient(90deg,var(--accent),transparent)}
+.stack{display:flex;flex-direction:column;gap:.6rem}
+
+/* ── open questions ── */
+.flag{margin-top:2.5rem;border:1px solid var(--accent);border-left-width:3px;border-radius:3px;padding:1rem 1.1rem;
+  background:color-mix(in srgb,var(--accent) 7%,transparent)}
+.flag h3{font-family:var(--mono);font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin:0 0 .5rem}
+.flag ul{margin:0;padding-left:1.1rem;font-size:.9rem;color:var(--muted)}
+.flag li+li{margin-top:.35rem}
+.flag b{color:var(--ink);font-weight:500}
+
+/* ── control panel ── */
+#panel{position:fixed;top:0;right:0;height:100%;width:300px;background:var(--panel);border-left:1px solid var(--line);
+  transform:translateX(100%);transition:transform .25s ease;z-index:50;display:flex;flex-direction:column;
+  font-family:var(--mono);font-size:.72rem}
+#panel.open{transform:none}
+#panel h4{margin:0;padding:.9rem 1rem;border-bottom:1px solid var(--line);font-size:.7rem;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--accent);font-weight:400}
+.pbody{overflow-y:auto;padding:1rem;flex:1}
+.pgroup{margin-bottom:1.3rem}
+.plabel{font-size:.62rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:.5rem}
+.pctl{display:flex;gap:.4rem;flex-wrap:wrap;align-items:center}
+.pbtn{background:var(--panel2);border:1px solid var(--line);color:var(--ink);border-radius:2px;padding:.35rem .55rem;
+  font-family:var(--mono);font-size:.62rem;cursor:pointer;letter-spacing:.06em}
+.pbtn:hover{border-color:var(--accent);color:var(--accent)}
+.pbtn.on{border-color:var(--accent);color:var(--accent)}
+input[type=color]{width:38px;height:28px;padding:0;border:1px solid var(--line);background:none;cursor:pointer;border-radius:2px}
+.slist{display:flex;flex-direction:column;gap:.3rem}
+.sitem{display:flex;align-items:center;gap:.35rem;background:var(--panel2);border:1px solid var(--line);
+  border-radius:2px;padding:.3rem .4rem}
+.sitem span{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:.63rem;color:var(--ink)}
+.sitem.off span{color:var(--muted);text-decoration:line-through}
+.mini{background:none;border:none;color:var(--muted);cursor:pointer;font-size:.75rem;padding:0 .2rem;line-height:1}
+.mini:hover{color:var(--accent)}
+#toggle{position:fixed;top:1rem;right:1rem;z-index:51;background:var(--accent);color:var(--bg);border:none;
+  border-radius:3px;padding:.55rem .8rem;font-family:var(--mono);font-size:.65rem;letter-spacing:.1em;
+  text-transform:uppercase;cursor:pointer;font-weight:700}
+
+/* ── export modal ── */
+#modal{position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:60;display:none;align-items:center;justify-content:center;padding:2rem}
+#modal.open{display:flex}
+.mbox{background:var(--panel);border:1px solid var(--line);border-radius:4px;max-width:760px;width:100%;
+  max-height:82vh;display:flex;flex-direction:column}
+.mbox h4{margin:0;padding:.9rem 1rem;border-bottom:1px solid var(--line);font-family:var(--mono);font-size:.7rem;
+  letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:400}
+#spec{flex:1;overflow:auto;margin:0;padding:1rem;font-family:var(--mono);font-size:.72rem;color:var(--ink);
+  white-space:pre-wrap;background:var(--bg)}
+.mfoot{padding:.8rem 1rem;border-top:1px solid var(--line);display:flex;gap:.5rem;justify-content:flex-end}
+
+@media(max-width:760px){
+  .wrap{padding-top:4.5rem}
+  #panel{width:100%}
+  .hero .content{max-width:100%}
+  .navlinks{display:none}
+}
+@media print{ #panel,#toggle,#modal{display:none!important} body{--bg:#fff} }
+</style>
+</head>
+<body>
+
+<button id="toggle">Controls</button>
+
+<div class="wrap">
+  <header class="doc">
+    <div class="eyebrow" id="h-sub"></div>
+    <h1 id="h-title"></h1>
+    <div class="meta" id="h-meta"></div>
+  </header>
+  <div id="sections"></div>
+  <div class="flag" id="open-flag" hidden>
+    <h3>Open before build</h3>
+    <ul id="open-list"></ul>
+  </div>
+</div>
+
+<aside id="panel">
+  <h4>Wireframe controls</h4>
+  <div class="pbody">
+    <div class="pgroup">
+      <div class="plabel">Accent</div>
+      <div class="pctl">
+        <input type="color" id="c-accent">
+        <button class="pbtn" id="c-accent-reset">Reset</button>
+      </div>
+    </div>
+    <div class="pgroup">
+      <div class="plabel">Theme</div>
+      <div class="pctl">
+        <button class="pbtn" data-theme="dark">Dark</button>
+        <button class="pbtn" data-theme="light">Light</button>
+      </div>
+    </div>
+    <div class="pgroup">
+      <div class="plabel">Density</div>
+      <div class="pctl">
+        <button class="pbtn" data-density="normal">Normal</button>
+        <button class="pbtn" data-density="compact">Compact</button>
+      </div>
+    </div>
+    <div class="pgroup">
+      <div class="plabel">Sections — drag order with ↑ ↓</div>
+      <div class="slist" id="c-sections"></div>
+    </div>
+    <div class="pgroup">
+      <div class="plabel">Descriptions are editable — click any and type</div>
+      <div class="pctl">
+        <button class="pbtn" id="c-export">Export spec</button>
+        <button class="pbtn" id="c-reset">Reset all</button>
+      </div>
+    </div>
+  </div>
+</aside>
+
+<div id="modal">
+  <div class="mbox">
+    <h4>Build spec — paste this back into chat</h4>
+    <pre id="spec"></pre>
+    <div class="mfoot">
+      <button class="pbtn" id="m-copy">Copy</button>
+      <button class="pbtn" id="m-close">Close</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ══════════════════════════════════════════════════════════════
+   CONFIG — this is the only part you edit per project.
+   The worked example below is a client landing page.
+   ══════════════════════════════════════════════════════════════ */
+const CONFIG = {
+  project: "ChopChop — Seller Dashboard",
+  subtitle: "OSW upgrade: site + PWA + dashboard · Layout Wireframe · v1 scope",
+  accent: "#c9a227",
+  meta: [
+    ["Surface", "Seller dashboard — ONE deployment, all tenants"],
+    ["Delivery", "Built and handed over by OSW — no self-serve signup"],
+    ["Renders from", "tenants.attribute_schema + sale_mode + stock_mode"],
+    ["Signature", "config-driven variant editor"]
+  ],
+  sections: [
+    {
+      id:"shell", num:"00", name:"App shell — tenant-branded chrome",
+      tags:[{t:"persistent"},{t:"tenant colours"}],
+      desc:"Fixed left rail and top bar that load the client's name, logo and accent from their <b>branding</b> row on login — <b>the same deployment serves every tenant, so nothing here is hardcoded and the rail must survive a tenant with no logo uploaded.</b>",
+      blocks:[
+        {type:"nav", mark:"TENANT LOGO", links:["Orders","Catalogue","Import","Settings"], cta:"Ross · Sign out"},
+        {type:"note", text:"logo, name and accent from tenants.branding · falls back to initials block when no logo"}
+      ]
+    },
+    {
+      id:"orders", num:"01", name:"Orders queue — default landing screen",
+      tags:[{t:"Realtime"},{t:"WhatsApp reply",kind:"wa"}],
+      desc:"The screen the seller lives on: incoming orders newest-first with status, reference, total and age, updating live via Realtime so a new order appears without a refresh — <b>sent orders that were never actually pressed-send in WhatsApp must be visually distinct and dismissable, or the queue fills with phantoms.</b>",
+      blocks:[
+        {type:"split", ratio:"1fr auto", left:[{type:"lines",widths:[40],size:"lg"}], right:{type:"btns",items:[{label:"Filter: status"},{label:"Today"}]}},
+        {type:"rowbox", label:"ORDER A47 · sent · 2 min · R612 · 6 items · [ Received ] [ Dismiss ]", align:"start"},
+        {type:"rowbox", label:"ORDER A46 · received · 18 min · R240 · [ Confirm ] [ Reply on WhatsApp ]", align:"start"},
+        {type:"rowbox", label:"ORDER A45 · confirmed · 1 hr · R1 180 · [ Ready ]", align:"start"},
+        {type:"rowbox", label:"ORDER A44 · completed · yesterday · R305", align:"start"},
+        {type:"note", text:"status: sent → received → confirmed → ready → completed · cancelled at any point"}
+      ]
+    },
+    {
+      id:"orderdetail", num:"02", name:"Order detail — status actions + weight adjust",
+      tags:[{t:"sale_mode branch"},{t:"prefilled wa.me",kind:"wa"}],
+      desc:"Slide-over showing buyer details and every line with its variant as sold, where the status buttons advance the order and each advance offers a prefilled WhatsApp reply the seller sends with one tap — <b>when sale_mode is weight the seller edits qty_confirmed per line and the total recalculates, because the buyer's total was only ever an estimate.</b>",
+      blocks:[
+        {type:"split", ratio:"1fr 1fr", left:[
+          {type:"rowbox",label:"Buyer name · phone · collect/delivery",align:"start"},
+          {type:"rowbox",label:"LINE · Biefstuk (per kg) · 1.4 kg × R229 · [ adjust ]",align:"start"},
+          {type:"rowbox",label:"LINE · Skenkel (per pack) · 2 × R85",align:"start"},
+          {type:"rowbox",label:"Buyer note",align:"start"}
+        ], right:{type:"rowbox",label:"status timeline + action stack",height:210}},
+        {type:"btns", items:[{label:"Received"},{label:"Confirm"},{label:"Reply on WhatsApp",kind:"wa"},{label:"Cancel"}]},
+        {type:"note", text:"weight tenants: qty_confirmed drives the real total · unit tenants: this control is hidden entirely"}
+      ]
+    },
+    {
+      id:"catalogue", num:"03", name:"Catalogue — categories rail + item grid",
+      tags:[{t:"all data-driven"}],
+      desc:"Categories down the side and that category's items as cards, both read straight from the tenant's own rows so a butchery shows Beesvleis and Lam while a shoe shop shows Sneakers and Boots from identical code — <b>categories are reorderable and items must render legibly with no image, since most clients upload photos late or never.</b>",
+      blocks:[
+        {type:"split", ratio:"auto 1fr", left:[
+          {type:"rowbox",label:"CATEGORY 1",align:"start"},
+          {type:"rowbox",label:"CATEGORY 2",align:"start"},
+          {type:"rowbox",label:"CATEGORY 3",align:"start"},
+          {type:"btns",items:[{label:"+ Category"}]}
+        ], right:{type:"grid", cols:3, count:6, label:"item card · name · variant count · price range · active toggle", ratio:"4/3"}},
+        {type:"btns", items:[{label:"+ Add product"},{label:"Import"}]},
+        {type:"note", text:"card must not collapse when image_url is null · show a neutral block, never a broken image"}
+      ]
+    },
+    {
+      id:"product", num:"04", name:"Add / edit product — the generated modal",
+      tags:[{t:"Signature",kind:"sig"},{t:"attribute_schema"}],
+      desc:"Universal fields at the top — name, description, category, image, active — above a variant section that <b>builds itself from the tenant's attribute_schema</b>, so a butchery gets two priced rows for per kg and per pack while a shoe shop gets a nine-cell grid from size × colour, with no branch in the code for either.",
+      blocks:[
+        {type:"lines", widths:[70,45], size:"sm"},
+        {type:"rowbox", label:"name · description · category · image upload · active", align:"start", height:70},
+        {type:"rowbox", label:"⚙ VARIANT EDITOR — generated from attribute_schema", align:"center", height:40},
+        {type:"cols", items:[
+          {big:"1 attribute", small:"per kg / per pack → 2 rows"},
+          {big:"2 attributes", small:"size × colour → 9 rows"},
+          {big:"0 attributes", small:"single default variant"}
+        ]},
+        {type:"rowbox", label:"per row: price · stock or available toggle · sku", align:"start"},
+        {type:"note", text:"values validate against attribute_schema before save — prevents navy vs Navy drift"}
+      ]
+    },
+    {
+      id:"import", num:"05", name:"Import — spreadsheet first, vision second",
+      tags:[{t:"headline feature"},{t:"review gate"},{t:"camera on mobile"}],
+      desc:"Drop a spreadsheet or shoot a photo of a price list and get every product found back as a mapped preview, shaped by the tenant's own attribute_schema so one uploader handles a meat list and a shoe list — <b>nothing writes to the catalogue until the seller approves the batch, and the preview renders as a table on desktop and one card per product on mobile so a 40-row import stays workable at 390px.</b>",
+      blocks:[
+        {type:"split", ratio:"1fr 1fr", left:[
+          {type:"rowbox",label:"file input · .xlsx .csv · opens Files / Drive / WhatsApp saves",align:"center",height:80},
+          {type:"rowbox",label:"PDF or photo · camera capture direct on mobile",align:"center",height:80}
+        ], right:{type:"rowbox",label:"preview — TABLE on desktop / CARD STACK on mobile",height:180}},
+        {type:"btns", items:[{label:"Approve batch"},{label:"Discard"}]},
+        {type:"rowbox", label:"mobile review: one product per card — name · price · variants · fix · approve · next", align:"start"},
+        {type:"note", text:"lands in import_batches as pending · extraction runs in an Edge Function · key never in the bundle"}
+      ]
+    },
+    {
+      id:"metrics", num:"06", name:"Metrics — completed orders only",
+      tags:[{t:"needs live data"}],
+      desc:"Revenue over time, order count, average basket and top and slow movers, all computed from <b>completed</b> orders rather than confirmed ones so the numbers stay trustworthy — <b>figures shown faded here because no client has run enough real orders to know what this screen should lead with.</b>",
+      blocks:[
+        {type:"cols", items:[
+          {big:"R ??",small:"revenue · completed",unknown:true},
+          {big:"?? orders",small:"period",unknown:true},
+          {big:"R ??",small:"average basket",unknown:true}
+        ]},
+        {type:"split", ratio:"2fr 1fr", left:[{type:"rowbox",label:"revenue over time",height:130}], right:{type:"rowbox",label:"top / slow movers",height:130}},
+        {type:"note", text:"defer detail until a real client has traded — do not design this screen on invented data"}
+      ]
+    },
+    {
+      id:"settings", num:"07", name:"Settings — what the seller may change",
+      tags:[{t:"scope decision"}],
+      desc:"Business details, WhatsApp number, collection or delivery, hours and branding — <b>the open question is whether attribute_schema is editable here by the seller or stays an onboarding-only field that only Brad touches, since a bad edit orphans existing variants.</b>",
+      blocks:[
+        {type:"rowbox", label:"business name · whatsapp_number (2782… format, validated)", align:"start"},
+        {type:"rowbox", label:"fulfilment_mode · trading hours · collection note", align:"start"},
+        {type:"rowbox", label:"branding — logo, accent, labels", align:"start"},
+        {type:"rowbox", label:"attribute_schema — seller-editable? UNRESOLVED", align:"start"},
+        {type:"note", text:"stock_mode and sale_mode are almost certainly Brad-only — changing them mid-trading breaks existing orders"}
+      ]
+    }
+  ],
+  open: [
+    "<b>Dashboard domain</b> — one shared host for every client, or a subdomain each.",
+    "<b>attribute_schema editing</b> — seller-editable in Settings, or onboarding-only. A bad edit orphans variants.",
+    "<b>Phantom order window</b> — how long a <i>sent</i> order sits before it auto-cancels or is flagged for dismissal.",
+    "<b>Metrics screen</b> — deliberately unresolved. No real trading data exists to design it against.",
+    "<b>Package price</b> — a home business selling in a WhatsApp group is a smaller wallet than a shopfront.",
+    "<b>Styling approach</b> — not chosen for either app."
+  ]
+};
+
+/* ══════════════════════════════════════════════════════════════
+   RENDERER + CONTROLS — leave below this line alone.
+   ══════════════════════════════════════════════════════════════ */
+const SLUG = "wf:" + CONFIG.project.toLowerCase().replace(/[^a-z0-9]+/g,"-");
+const DEFAULTS = { accent:CONFIG.accent, theme:"dark", density:"normal",
+                   order:CONFIG.sections.map(s=>s.id), off:[], descs:{} };
+const clone = o => JSON.parse(JSON.stringify(o));
+let S = load();
+
+function load(){
+  try{ const raw = localStorage.getItem(SLUG);
+    if(!raw) return clone(DEFAULTS);
+    const p = JSON.parse(raw);
+    const merged = Object.assign(clone(DEFAULTS), p);
+    // drop ids that no longer exist, append any new ones
+    merged.order = merged.order.filter(id=>CONFIG.sections.some(s=>s.id===id));
+    CONFIG.sections.forEach(s=>{ if(!merged.order.includes(s.id)) merged.order.push(s.id); });
+    return merged;
+  }catch(e){ return clone(DEFAULTS); }
+}
+function save(){ try{ localStorage.setItem(SLUG, JSON.stringify(S)); }catch(e){} }
+const el = (t,c,h)=>{ const n=document.createElement(t); if(c)n.className=c; if(h!=null)n.innerHTML=h; return n; };
+
+/* ── block renderers ── */
+function lines(widths,size){
+  const w = el("div","stack");
+  widths.forEach(x=>{ const b=el("div","txt"+(size&&size!=="sm"?" "+size:"")); b.style.width=x+"%"; w.appendChild(b); });
+  return w;
+}
+function btns(items){
+  const r = el("div","row");
+  items.forEach(b=> r.appendChild(el("span","btn"+(b.kind?" "+b.kind:""),b.label)));
+  return r;
+}
+function block(b){
+  switch(b.type){
+    case "nav": {
+      const n = el("div","navbar");
+      n.appendChild(el("div","mark",b.mark||"LOGO"));
+      n.appendChild(el("div","navlinks",(b.links||[]).map(l=>`<span>${l}</span>`).join("")));
+      if(b.cta) n.appendChild(el("span","btn"+(b.ctaKind?" "+b.ctaKind:""),b.cta));
+      return n;
+    }
+    case "hero": {
+      const h = el("div","hero"); h.style.minHeight = (b.height||280)+"px";
+      h.appendChild(el("div","ghost",b.note||""));
+      const c = el("div","content");
+      (b.lines||[]).forEach(l=>{ const t=el("div","txt"+(l.size&&l.size!=="sm"?" "+l.size:"")); t.style.width=l.w+"%"; c.appendChild(t); });
+      if(b.btns) c.appendChild(btns(b.btns));
+      h.appendChild(c); return h;
+    }
+    case "lines": {
+      if((b.widths||[]).length>1 && b.size==="sm"){
+        const r = el("div","row");
+        b.widths.forEach(w=>{ const t=el("div","txt"); t.style.flex="1"; r.appendChild(t); });
+        return r;
+      }
+      return lines(b.widths||[60], b.size);
+    }
+    case "track": {
+      const t = el("div","track");
+      (b.cards||[]).forEach(c=>{
+        const card = el("div","card"+(c.unknown?" unknown":""));
+        card.appendChild(el("span","cnum",c.num||""));
+        card.appendChild(el("div","box "+(c.unknown?"":"img"),c.unknown?"no photo yet":"photo"));
+        card.appendChild(el("span","cname",c.label||""));
+        t.appendChild(card);
+      });
+      return t;
+    }
+    case "grid": {
+      const g = el("div","grid");
+      g.style.gridTemplateColumns = `repeat(${b.cols||4},1fr)`;
+      for(let i=0;i<(b.count||4);i++){
+        const tile = el("div","box img",b.label||"image");
+        if(b.ratio) tile.style.aspectRatio = b.ratio;
+        g.appendChild(tile);
+      }
+      return g;
+    }
+    case "split": {
+      const g = el("div","split");
+      g.style.gridTemplateColumns = b.ratio||"1fr 1fr";
+      const L = el("div","stack"); (b.left||[]).forEach(x=>L.appendChild(block(x)));
+      g.appendChild(L);
+      if(b.right) g.appendChild(block(b.right));
+      return g;
+    }
+    case "cols": {
+      const g = el("div","cols");
+      g.style.gridTemplateColumns = `repeat(${(b.items||[]).length||3},1fr)`;
+      (b.items||[]).forEach(i=>{
+        const box = el("div","box solid"+(i.unknown?" unknown":""));
+        box.appendChild(el("span","big",i.big||""));
+        box.appendChild(el("span",null,i.small||""));
+        g.appendChild(box);
+      });
+      return g;
+    }
+    case "rowbox": {
+      const x = el("div","box "+(b.img?"img":"solid")+(b.align==="start"?" start":""),b.label||"");
+      if(b.height) x.style.minHeight = b.height+"px";
+      return x;
+    }
+    case "btns": return btns(b.items||[]);
+    case "bar": {
+      const f = el("div","navbar");
+      f.appendChild(el("div","mark",b.left||"LOGO"));
+      f.appendChild(el("div",null,`<span style="font-family:var(--mono);font-size:.6rem;letter-spacing:.06em;color:var(--muted)">${b.mid||""}</span>`));
+      f.appendChild(el("span","btn ghost",b.right||""));
+      return f;
+    }
+    case "note": return el("div","note",b.text||"");
+    default: return el("div","box","unknown block: "+b.type);
+  }
+}
+
+/* ── page render ── */
+function render(){
+  document.getElementById("h-sub").textContent = CONFIG.subtitle||"";
+  document.getElementById("h-title").textContent = CONFIG.project||"";
+  document.getElementById("h-meta").innerHTML = (CONFIG.meta||[])
+    .map(([k,v])=>`${k} <b>${v}</b>`).join("<br>");
+
+  const host = document.getElementById("sections");
+  host.innerHTML = "";
+  ordered().forEach((s,i)=>{
+    const sec = el("section","sec"+(S.off.includes(s.id)?" off":""));
+    const head = el("div","sec-head");
+    head.appendChild(el("span","num",String(i).padStart(2,"0")));
+    head.appendChild(el("span","name",s.name));
+    (s.tags||[]).forEach(t=>head.appendChild(el("span","tag"+(t.kind?" "+t.kind:""),t.t)));
+    sec.appendChild(head);
+    const frame = el("div","frame");
+    (s.blocks||[]).forEach(b=>frame.appendChild(block(b)));
+    sec.appendChild(frame);
+    const d = el("p","desc", S.descs[s.id] ?? s.desc);
+    d.setAttribute("contenteditable","true"); d.setAttribute("spellcheck","false");
+    d.addEventListener("blur",()=>{ S.descs[s.id]=d.innerHTML.trim(); save(); });
+    sec.appendChild(d);
+    host.appendChild(sec);
+  });
+
+  const flag = document.getElementById("open-flag");
+  if((CONFIG.open||[]).length){
+    flag.hidden = false;
+    document.getElementById("open-list").innerHTML = CONFIG.open.map(o=>`<li>${o}</li>`).join("");
+  } else flag.hidden = true;
+
+  applyState();
+  renderPanel();
+}
+function ordered(){
+  return S.order.map(id=>CONFIG.sections.find(s=>s.id===id)).filter(Boolean);
+}
+function applyState(){
+  document.documentElement.style.setProperty("--accent",S.accent);
+  document.body.classList.toggle("light",S.theme==="light");
+  document.body.classList.toggle("compact",S.density==="compact");
+  document.getElementById("c-accent").value = S.accent;
+  document.querySelectorAll("[data-theme]").forEach(b=>b.classList.toggle("on",b.dataset.theme===S.theme));
+  document.querySelectorAll("[data-density]").forEach(b=>b.classList.toggle("on",b.dataset.density===S.density));
+}
+
+/* ── control panel ── */
+function renderPanel(){
+  const list = document.getElementById("c-sections");
+  list.innerHTML = "";
+  ordered().forEach((s,i)=>{
+    const row = el("div","sitem"+(S.off.includes(s.id)?" off":""));
+    const eye = el("button","mini",S.off.includes(s.id)?"○":"●"); eye.title="Show / hide";
+    eye.onclick = ()=>{ const k=S.off.indexOf(s.id); k>-1?S.off.splice(k,1):S.off.push(s.id); save(); render(); };
+    const label = el("span",null,s.name);
+    const up = el("button","mini","↑"); up.onclick = ()=>move(i,-1);
+    const dn = el("button","mini","↓"); dn.onclick = ()=>move(i, 1);
+    row.append(eye,label,up,dn);
+    list.appendChild(row);
+  });
+}
+function move(i,d){
+  const j = i+d; if(j<0||j>=S.order.length) return;
+  [S.order[i],S.order[j]] = [S.order[j],S.order[i]];
+  save(); render();
+}
+
+/* ── export ── */
+function stripHTML(h){ const t=document.createElement("div"); t.innerHTML=h; return (t.textContent||"").trim(); }
+function buildSpec(){
+  const live = ordered().filter(s=>!S.off.includes(s.id));
+  let out = `# ${CONFIG.project} — approved layout\n`;
+  out += CONFIG.subtitle ? `${CONFIG.subtitle}\n` : "";
+  (CONFIG.meta||[]).forEach(([k,v])=> out += `- ${k}: ${v}\n`);
+  out += `- Accent: ${S.accent}\n\n## Sections, in order\n\n`;
+  live.forEach((s,i)=>{
+    out += `${String(i).padStart(2,"0")}. **${s.name}**`;
+    const tg = (s.tags||[]).map(t=>t.t).join(", ");
+    if(tg) out += ` _(${tg})_`;
+    out += `\n    ${stripHTML(S.descs[s.id] ?? s.desc)}\n\n`;
+  });
+  const dropped = ordered().filter(s=>S.off.includes(s.id));
+  if(dropped.length) out += `## Dropped\n${dropped.map(s=>`- ${s.name}`).join("\n")}\n\n`;
+  if((CONFIG.open||[]).length)
+    out += `## Open before build\n${CONFIG.open.map(o=>`- ${stripHTML(o)}`).join("\n")}\n`;
+  return out;
+}
+
+/* ── wiring ── */
+document.getElementById("toggle").onclick = ()=> document.getElementById("panel").classList.toggle("open");
+document.getElementById("c-accent").oninput = e => { S.accent = e.target.value; save(); applyState(); };
+document.getElementById("c-accent-reset").onclick = ()=>{ S.accent = CONFIG.accent; save(); applyState(); };
+document.querySelectorAll("[data-theme]").forEach(b=> b.onclick = ()=>{ S.theme=b.dataset.theme; save(); applyState(); });
+document.querySelectorAll("[data-density]").forEach(b=> b.onclick = ()=>{ S.density=b.dataset.density; save(); applyState(); });
+document.getElementById("c-reset").onclick = ()=>{
+  if(!confirm("Reset order, visibility and all edited descriptions?")) return;
+  S = clone(DEFAULTS); save(); render();
+};
+document.getElementById("c-export").onclick = ()=>{
+  document.getElementById("spec").textContent = buildSpec();
+  document.getElementById("modal").classList.add("open");
+};
+document.getElementById("m-close").onclick = ()=> document.getElementById("modal").classList.remove("open");
+document.getElementById("modal").onclick = e => { if(e.target.id==="modal") e.currentTarget.classList.remove("open"); };
+document.getElementById("m-copy").onclick = async ()=>{
+  const btn = document.getElementById("m-copy"), txt = document.getElementById("spec").textContent;
+  try{ await navigator.clipboard.writeText(txt); btn.textContent="Copied"; }
+  catch(e){
+    const ta=document.createElement("textarea"); ta.value=txt; document.body.appendChild(ta);
+    ta.select(); try{ document.execCommand("copy"); btn.textContent="Copied"; }
+    catch(_){ btn.textContent="Select and copy"; } ta.remove();
+  }
+  setTimeout(()=>btn.textContent="Copy",1600);
+};
+document.addEventListener("keydown", e=>{ if(e.key==="Escape") document.getElementById("modal").classList.remove("open"); });
+
+render();
+</script>
+</body>
+</html>
