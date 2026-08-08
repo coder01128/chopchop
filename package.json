@@ -1,0 +1,21 @@
+{
+  "name": "chopchop",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "db:push": "supabase db push",
+    "db:types": "supabase gen types typescript --linked --schema public > packages/shared/types/db.ts",
+    "db:seed": "node scripts/seed.mjs",
+    "test": "vitest run",
+    "test:leak": "vitest run tests/tenant-leak.test.ts"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.58.0"
+  },
+  "devDependencies": {
+    "dotenv": "^17.2.1",
+    "typescript": "^5.9.2",
+    "vitest": "^3.2.4"
+  }
+}

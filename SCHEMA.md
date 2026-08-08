@@ -3,7 +3,7 @@
 The contract. Both apps, the import pipeline and every policy check against this.
 Change it here first, then in a migration.
 
-Seven tables. One shared Postgres database. Every tenant-owned row carries
+Eight tables. One shared Postgres database. Every tenant-owned row carries
 `tenant_id`.
 
 ---
@@ -146,7 +146,8 @@ Index on `attributes` (GIN) and on (`tenant_id`, `item_id`).
 |---|---|---|
 | `id` | uuid PK | |
 | `tenant_id` | uuid FK | |
-| `reference` | text | short human code — `A47` — shown in the WhatsApp message |
+| `reference` | text | short human code — `A47` — shown in the WhatsApp message. **Unique per tenant:** `unique (tenant_id, reference)`. The seller matches the WhatsApp message against it, so collisions are not cosmetic. |
+| `buyer_id` | uuid FK → auth.users | the buyer's anonymous auth user — see Buyer identity below. Indexed. |
 | `customer_name` | text | |
 | `customer_phone` | text | |
 | `fulfilment` | text | `collect` \| `local_delivery` |
@@ -214,19 +215,54 @@ Enabled on all eight tables. No exceptions, including `import_batches`.
 **Authenticated (dashboard):** all operations restricted to rows whose
 `tenant_id` appears in the caller's `tenant_users` rows.
 
-**Anonymous (storefront):** SELECT only, and only on `categories`, `items` and
-`variants`, where `active = true` and the tenant is active. A menu is public
-information; nothing else is.
+**Anonymous role (storefront catalogue):** SELECT only, and only on
+`categories`, `items` and `variants`, where `active = true` and the tenant is
+active. A catalogue is public information; nothing else is.
 
-**Order creation:** anonymous INSERT into `orders` and `order_items` for an
-active tenant. Anonymous SELECT on a single order by id only — enough for the
-status page, never a list.
+**Buyers (orders):** buyers are **anonymous auth users**, not the `anon` role —
+see Buyer identity below. `orders` and `order_items` carry no `anon` grants at
+all. Buyers INSERT and SELECT as `authenticated`, restricted to their own rows:
+
+```sql
+using (buyer_id = (select auth.uid()))
+```
+
+**Restrictive policy required on every dashboard table.** An anonymous auth user
+holds the `authenticated` role, and permissive policies combine with OR. Each
+tenant-scoped policy must be paired with a restrictive policy asserting the
+caller is not anonymous, or a buyer session inherits dashboard reach. Rely on
+the `tenant_users` lookup alone at your peril — belt and braces, both.
 
 `tenants` is readable anonymously for public fields only (slug, name, branding,
 labels). `whatsapp_number` is fine to expose — it's on the storefront anyway.
 
 **The test:** `/tests/tenant-leak.test.ts` — authenticate as tenant A, query
 every table, assert zero rows belonging to tenant B. Run before every go-live.
+It must also assert that an anonymous auth user (a buyer session) reads nothing
+beyond its own orders, and cannot list `orders` at all.
+
+---
+
+## Buyer identity
+
+The storefront calls `signInAnonymously()` on first visit. That creates a real
+auth user carrying the `authenticated` role with an `is_anonymous` claim in the
+JWT, and the session persists on the device.
+
+This exists because a buyer's order status page needs **Realtime**, and Realtime
+respects RLS — Postgres Changes only pushes a row to clients whose policies let
+them read it. An RLS policy is evaluated per row with no knowledge of the
+caller's `where` clause, so "anyone may read one order if they know its id" is
+not expressible: any policy permissive enough to return one order returns all of
+them. A `SECURITY DEFINER` function can fetch one order, but a function is not a
+subscription, so the buyer page would have to poll. `buyer_id = auth.uid()` is a
+per-row check, so it works with Realtime and needs no function.
+
+Consequences to hold onto:
+
+- Anonymous sign-ins must be enabled in the dashboard.
+- Anonymous users accumulate in `auth.users`. They need periodic cleanup.
+- The buyer sees their own past orders for free — the session is the identity.
 
 ---
 
