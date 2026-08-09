@@ -18,6 +18,9 @@ import {
   storeFromVariants,
   validateCells,
   activeCells,
+  restoreVariant,
+  retiredVariants,
+  liveVariants,
   type Cell,
   type VariantRecord,
 } from '../apps/dashboard/src/catalogue/variant-model';
@@ -32,7 +35,23 @@ const SHOES: TenantAttribute[] = [
 ];
 
 function variant(id: string, attributes: Record<string, string>, price = 10): VariantRecord {
-  return { id, attributes, price, stock: 0, available: true, sku: null };
+  return { id, attributes, price, stock: 0, available: true, sku: null, retiredAt: null };
+}
+
+function retiredVariant(
+  id: string,
+  attributes: Record<string, string>,
+  price = 10,
+): VariantRecord {
+  return {
+    id,
+    attributes,
+    price,
+    stock: 0,
+    available: false,
+    sku: null,
+    retiredAt: '2026-08-01T10:00:00Z',
+  };
 }
 
 describe('comboKey', () => {
@@ -246,6 +265,70 @@ describe('validateCells', () => {
       {},
     ).map((entry) => ({ ...entry, price: '899' }));
     expect(validateCells(cells, { names: ['size', 'colour'], values: { size: ['7', '8'], colour: ['white', 'black'] } }, SHOES, {})).toEqual([]);
+  });
+});
+
+describe('retired variants', () => {
+  const variants = [
+    variant('live-kg', { unit: 'per kg' }, 189.9),
+    retiredVariant('gone-pack', { unit: 'per pack' }, 94.95),
+  ];
+
+  it('splits live from retired', () => {
+    expect(liveVariants(variants).map((entry) => entry.id)).toEqual(['live-kg']);
+    expect(retiredVariants(variants).map((entry) => entry.id)).toEqual(['gone-pack']);
+  });
+
+  it('does not appear as a ticked value on reopen', () => {
+    // The bug this exists to fix: the seller unticked `per pack`, was told it
+    // would be kept for order history, and then found it ticked again.
+    const shape = deriveShape(variants, BUTCHERY);
+    expect(shape.values.unit).toEqual(['per kg']);
+    expect(shape.values.unit).not.toContain('per pack');
+  });
+
+  it('does not occupy a cell in the grid', () => {
+    const store = storeFromVariants(variants);
+    expect(Object.keys(store)).toHaveLength(1);
+    const cells = activeCells(deriveShape(variants, BUTCHERY), store);
+    expect(cells.map((cell) => cell.attributes)).toEqual([{ unit: 'per kg' }]);
+  });
+
+  it('is not re-offered for removal — it is already gone from the selection', () => {
+    const store = storeFromVariants(variants);
+    expect(droppedVariantIds(store, deriveShape(variants, BUTCHERY))).toEqual([]);
+  });
+
+  it('comes back with its price when restored', () => {
+    const shape = deriveShape(variants, BUTCHERY);
+    const store = storeFromVariants(variants);
+
+    const next = restoreVariant(shape, store, variants[1], BUTCHERY);
+
+    expect(next.shape.values.unit).toEqual(['per kg', 'per pack']);
+
+    const cells = activeCells(next.shape, next.store);
+    expect(cells).toHaveLength(2);
+
+    const restored = cells.find((cell) => cell.attributes.unit === 'per pack')!;
+    // Its id comes back too, so the save is an update that clears retired_at
+    // rather than an insert that would collide with the existing row.
+    expect(restored.variantId).toBe('gone-pack');
+    expect(restored.price).toBe('94.95');
+    expect(restored.isNew).toBe(false);
+    // Retiring set available = false; restoring has to undo that too, or the
+    // variant comes back still invisible to buyers with nothing to say why.
+    expect(restored.available).toBe(true);
+  });
+
+  it('restores an attribute the product no longer uses at all', () => {
+    const only = [retiredVariant('r', { size: '7', colour: 'red' }, 500)];
+    const shape = deriveShape(only, SHOES);
+    expect(shape.names).toEqual([]);
+
+    const next = restoreVariant(shape, storeFromVariants(only), only[0], SHOES);
+    expect(next.shape.names).toEqual(['size', 'colour']);
+    expect(activeCells(next.shape, next.store)).toHaveLength(1);
   });
 });
 

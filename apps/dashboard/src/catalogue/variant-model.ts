@@ -25,6 +25,25 @@ export interface VariantRecord {
   stock: number;
   available: boolean;
   sku: string | null;
+  /**
+   * Set when the seller removed this variant and it could not be deleted,
+   * because it appears in order history. Not the same as `available = false`,
+   * which is the everyday in-stock toggle.
+   */
+  retiredAt: string | null;
+}
+
+/** Retired variants are not part of the product's live shape. */
+export function isLive(variant: VariantRecord): boolean {
+  return variant.retiredAt === null;
+}
+
+export function liveVariants(variants: VariantRecord[]): VariantRecord[] {
+  return variants.filter(isLive);
+}
+
+export function retiredVariants(variants: VariantRecord[]): VariantRecord[] {
+  return variants.filter((variant) => !isLive(variant));
 }
 
 /** One editable variant. Numbers are held as strings — this is form state. */
@@ -77,6 +96,10 @@ function orderedBy<T>(items: T[], reference: T[]): T[] {
  * than dropped: they exist, they are priced, and they may appear in past
  * orders. Dropping them here would silently delete a live variant the moment
  * a seller edited an old product after the palette changed.
+ *
+ * Retired variants are excluded. The seller unticked those and was told they
+ * would be kept for order history — showing them ticked again on reopen reads
+ * as the app ignoring them. Unticked means unticked.
  */
 export function deriveShape(
   variants: VariantRecord[],
@@ -87,7 +110,7 @@ export function deriveShape(
   const seenNames: string[] = [];
   const seenValues: Record<string, string[]> = {};
 
-  for (const variant of variants) {
+  for (const variant of liveVariants(variants)) {
     for (const [name, value] of Object.entries(variant.attributes)) {
       if (typeof value !== 'string') continue;
       if (!seenNames.includes(name)) {
@@ -150,9 +173,10 @@ export function cellFromVariant(variant: VariantRecord): Cell {
   };
 }
 
+/** The editable grid. Retired variants live in their own block, not here. */
 export function storeFromVariants(variants: VariantRecord[]): CellStore {
   const store: CellStore = {};
-  for (const variant of variants) {
+  for (const variant of liveVariants(variants)) {
     store[comboKey(variant.attributes)] = cellFromVariant(variant);
   }
   return store;
@@ -267,6 +291,48 @@ export function droppedVariantIds(original: CellStore, shape: ProductShape): str
   return Object.values(original)
     .filter((cell) => cell.variantId && !activeKeys.has(cell.key))
     .map((cell) => cell.variantId!);
+}
+
+/**
+ * Brings a retired variant back into the live grid.
+ *
+ * Its attribute values are ticked back on, and its row joins the store with its
+ * id intact — so the save is an ordinary update that clears `retired_at`, not a
+ * new insert. The price, stock and SKU it was retired with come back with it.
+ *
+ * `available` comes back true. Retiring is what set it false, so leaving it
+ * false would restore a variant that is still invisible to buyers — and for an
+ * availability tenant, where `available` is the only stock signal, the seller
+ * would get no hint why. Undo has to undo the whole thing.
+ */
+export function restoreVariant(
+  shape: ProductShape,
+  store: CellStore,
+  variant: VariantRecord,
+  palette: TenantAttribute[],
+): { shape: ProductShape; store: CellStore } {
+  const names = [...shape.names];
+  const values: Record<string, string[]> = { ...shape.values };
+  const paletteNames = palette.map((attribute) => attribute.name);
+
+  for (const [name, value] of Object.entries(variant.attributes)) {
+    if (!names.includes(name)) {
+      names.push(name);
+      values[name] = [];
+    }
+    if (!values[name].includes(value)) {
+      const options = palette.find((attribute) => attribute.name === name)?.options ?? [];
+      values[name] = orderedBy([...values[name], value], options);
+    }
+  }
+
+  return {
+    shape: { names: orderedBy(names, paletteNames), values },
+    store: {
+      ...store,
+      [comboKey(variant.attributes)]: { ...cellFromVariant(variant), available: true },
+    },
+  };
 }
 
 /**

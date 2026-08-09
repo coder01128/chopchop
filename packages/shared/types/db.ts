@@ -327,6 +327,7 @@ export type Database = {
           id: string
           item_id: string
           price: number
+          retired_at: string | null
           sku: string | null
           stock: number
           tenant_id: string
@@ -337,6 +338,7 @@ export type Database = {
           id?: string
           item_id: string
           price: number
+          retired_at?: string | null
           sku?: string | null
           stock?: number
           tenant_id: string
@@ -347,6 +349,7 @@ export type Database = {
           id?: string
           item_id?: string
           price?: number
+          retired_at?: string | null
           sku?: string | null
           stock?: number
           tenant_id?: string
@@ -380,6 +383,15 @@ export type Database = {
       order_belongs_to_tenant: {
         Args: { p_order_id: string; p_tenant_id: string }
         Returns: boolean
+      }
+      save_product: {
+        Args: {
+          p_item: Json
+          p_removals?: Json
+          p_tenant_id: string
+          p_variants?: Json
+        }
+        Returns: Json
       }
       user_tenant_ids: { Args: never; Returns: string[] }
     }

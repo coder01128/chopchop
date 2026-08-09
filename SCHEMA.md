@@ -144,6 +144,15 @@ one jsonb column for everything that differs by vertical.
 | `price` | numeric(10,2) | in ZAR |
 | `stock` | numeric(10,3) | decimal so weight works; ignored when `stock_mode = availability` |
 | `available` | bool | the in-stock toggle; the only stock signal when `stock_mode = availability` |
+| `retired_at` | timestamptz | nullable — set when a seller removed this variant but it could not be deleted (see below). Buyers never see a retired variant. |
+
+**`retired_at` is not `available = false`.** `available` is the everyday
+in-stock toggle, flipped several times a day. `retired_at` means the seller took
+this variant off the product and Postgres refused to delete it, because
+`order_items.variant_id` is `ON DELETE RESTRICT` and it appears in order
+history. A sold-out variant still renders on the storefront, greyed, because it
+is coming back; a retired one is filtered out by policy. The variant editor
+lists retired variants separately, where they can be restored.
 
 `stock_mode` defaults to `counted`. These sellers trade only through orders, so
 a count stays accurate and a baker with 20 loaves wants them to run out on their

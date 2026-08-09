@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { getSupabaseClient, useTenant } from '@chopchop/shared';
 import {
   classifyVariants,
+  describeAge,
   loadVariants,
   saveProduct,
   type CategoryRow,
@@ -14,11 +15,14 @@ import {
   activeCells,
   deriveShape,
   droppedVariantIds,
+  restoreVariant,
+  retiredVariants,
   storeFromVariants,
   validateCells,
   type CellError,
   type CellStore,
   type ProductShape,
+  type VariantRecord,
 } from './variant-model';
 import { VariantEditor } from './VariantEditor';
 import styles from './ProductModal.module.css';
@@ -64,6 +68,7 @@ export function ProductModal({
   const [shape, setShape] = useState<ProductShape>({ names: [], values: {} });
   const [store, setStore] = useState<CellStore>({});
   const [original, setOriginal] = useState<CellStore>({});
+  const [retired, setRetired] = useState<VariantRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [showErrors, setShowErrors] = useState(false);
@@ -82,6 +87,7 @@ export function ProductModal({
         setShape({ names: [], values: {} });
         setStore({});
         setOriginal({});
+        setRetired([]);
         setLoading(false);
         return;
       }
@@ -105,6 +111,10 @@ export function ProductModal({
         const built = storeFromVariants(variants);
         setStore(built);
         setOriginal(built);
+        // Retired variants are excluded from both of the above — they are not a
+        // choice the seller currently has made, so they render as their own
+        // block rather than as ticked values.
+        setRetired(retiredVariants(variants));
       } catch (error) {
         if (active) setFailure(error instanceof Error ? error.message : String(error));
       } finally {
@@ -189,18 +199,11 @@ export function ProductModal({
     setSaving(true);
     setFailure(null);
     try {
-      const result = await saveProduct(
-        client,
-        tenant.id,
-        draft,
-        cells,
-        confirmedRemovals,
-        { tracksStock: tenant.stockMode === 'counted' },
-      );
+      const result = await saveProduct(client, tenant.id, draft, cells, confirmedRemovals);
 
       const parts = [`Saved ${draft.name.trim()}`];
-      if (result.deleted) parts.push(`${result.deleted} variant(s) removed`);
-      if (result.deactivated) parts.push(`${result.deactivated} kept but marked unavailable`);
+      if (result.deleted) parts.push(`${result.deleted} variant(s) deleted`);
+      if (result.retired) parts.push(`${result.retired} retired but kept for order history`);
       onSaved(`${parts.join(' · ')}.`);
     } catch (error) {
       setFailure(error instanceof Error ? error.message : String(error));
@@ -325,6 +328,13 @@ export function ProductModal({
               stockMode={tenant.stockMode}
               errors={showErrors ? errors : []}
               lockedAttributes={lockedAttributes}
+              retired={retired}
+              onRestore={(variant) => {
+                const next = restoreVariant(shape, store, variant, tenant.attributeSchema);
+                setShape(next.shape);
+                setStore(next.store);
+                setRetired((current) => current.filter((entry) => entry.id !== variant.id));
+              }}
             />
 
             {showErrors && errors.length > 0 && (
@@ -374,7 +384,7 @@ function RemovalDialog({
   onConfirm: (confirmed: { id: string; verdict: RemovalVerdict }[]) => void;
 }) {
   const deletable = removals.filter((entry) => entry.usage.verdict === 'deletable');
-  const deactivate = removals.filter((entry) => entry.usage.verdict === 'deactivate-only');
+  const retire = removals.filter((entry) => entry.usage.verdict === 'retire-only');
   const blocked = removals.filter((entry) => entry.usage.verdict === 'blocked');
 
   return (
@@ -395,16 +405,18 @@ function RemovalDialog({
           </section>
         )}
 
-        {deactivate.length > 0 && (
+        {retire.length > 0 && (
           <section className={styles.confirmGroup}>
             <p className={styles.confirmLead}>
               These appear in completed orders, so they cannot be deleted without rewriting order
-              history. They will be kept and marked unavailable instead — buyers will not see them:
+              history. They will be retired instead — kept, hidden from buyers, and listed under
+              Retired where you can restore them:
             </p>
             <ul>
-              {deactivate.map((entry) => (
+              {retire.map((entry) => (
                 <li key={entry.id}>
-                  {entry.label} <span className={styles.count}>{entry.usage.orderCount} order line(s)</span>
+                  {entry.label}{' '}
+                  <span className={styles.count}>{entry.usage.orderCount} order line(s)</span>
                 </li>
               ))}
             </ul>
@@ -414,13 +426,25 @@ function RemovalDialog({
         {blocked.length > 0 && (
           <section className={styles.confirmGroup} data-tone="blocked">
             <p className={styles.confirmLead}>
-              These are on orders that are still open. Nothing will change for them until those
-              orders are completed or cancelled:
+              These are on orders that are still open, so nothing will change for them yet. Deal
+              with the orders first — an order that was never really placed can be cancelled:
             </p>
             <ul>
               {blocked.map((entry) => (
                 <li key={entry.id}>
-                  {entry.label} <span className={styles.count}>{entry.usage.openCount} open order(s)</span>
+                  {entry.label}
+                  {/* Naming the orders, not counting them: "1 open order" tells
+                      the seller nothing they can act on. */}
+                  <ul className={styles.orderList}>
+                    {entry.usage.blockingOrders.map((order) => (
+                      <li key={order.reference}>
+                        <span className={styles.orderRef}>{order.reference}</span>
+                        <span className={styles.count}>
+                          {order.status} · {describeAge(order.createdAt)}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
                 </li>
               ))}
             </ul>

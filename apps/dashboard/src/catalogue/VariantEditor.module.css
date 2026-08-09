@@ -300,3 +300,69 @@
   color: var(--danger);
   font-size: 0.8rem;
 }
+
+/* Retired variants are not an active choice the seller has made, so they sit
+   below the grid rather than as ticked values inside it. */
+.retiredBlock {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 0.75rem 0.85rem;
+  background: var(--panel2);
+}
+
+.retiredTitle {
+  margin: 0;
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink);
+  opacity: 0.8;
+}
+
+.retiredLead {
+  margin: 0.35rem 0 0.6rem;
+  font-size: 0.82rem;
+  opacity: 0.78;
+}
+
+.retiredList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.retiredItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  border: 1px dashed var(--line);
+  border-radius: var(--radius);
+  padding: 0.45rem 0.6rem;
+  background: var(--bg);
+}
+
+.retiredName {
+  font-size: 0.88rem;
+  opacity: 0.85;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.restoreButton {
+  flex: 0 0 auto;
+  background: transparent;
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  border-radius: var(--radius);
+  padding: 0.32rem 0.7rem;
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+}

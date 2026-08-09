@@ -75,7 +75,7 @@ export async function loadVariants(
 ): Promise<VariantRecord[]> {
   const { data, error } = await client
     .from('variants')
-    .select('id, attributes, price, stock, available, sku')
+    .select('id, attributes, price, stock, available, sku, retired_at')
     .eq('item_id', itemId);
   if (error) throw new Error(`Could not load variants: ${error.message}`);
 
@@ -86,15 +86,25 @@ export async function loadVariants(
     stock: Number(row.stock),
     available: row.available,
     sku: row.sku,
+    retiredAt: row.retired_at,
   }));
 }
 
-export type RemovalVerdict = 'deletable' | 'deactivate-only' | 'blocked';
+export type RemovalVerdict = 'deletable' | 'retire-only' | 'blocked';
+
+/** An order standing in the way of a removal, named so the seller can go and deal with it. */
+export interface BlockingOrder {
+  reference: string;
+  status: OrderStatus;
+  createdAt: string;
+}
 
 export interface VariantUsage {
   verdict: RemovalVerdict;
   orderCount: number;
   openCount: number;
+  /** Open orders only — the ones the seller can actually act on. */
+  blockingOrders: BlockingOrder[];
 }
 
 /**
@@ -111,13 +121,13 @@ export async function classifyVariants(
 ): Promise<Record<string, VariantUsage>> {
   const usage: Record<string, VariantUsage> = {};
   for (const id of variantIds) {
-    usage[id] = { verdict: 'deletable', orderCount: 0, openCount: 0 };
+    usage[id] = { verdict: 'deletable', orderCount: 0, openCount: 0, blockingOrders: [] };
   }
   if (variantIds.length === 0) return usage;
 
   const { data, error } = await client
     .from('order_items')
-    .select('variant_id, orders!inner(status)')
+    .select('variant_id, orders!inner(reference, status, created_at)')
     .in('variant_id', variantIds);
 
   if (error) throw new Error(`Could not check order history: ${error.message}`);
@@ -126,16 +136,45 @@ export async function classifyVariants(
     const entry = usage[line.variant_id];
     if (!entry) continue;
     entry.orderCount += 1;
-    const status = (line.orders as unknown as { status: OrderStatus }).status;
-    if (OPEN_STATUSES.includes(status)) entry.openCount += 1;
+
+    const order = line.orders as unknown as {
+      reference: string;
+      status: OrderStatus;
+      created_at: string;
+    };
+
+    if (OPEN_STATUSES.includes(order.status)) {
+      entry.openCount += 1;
+      // Named, not counted: "1 open order" tells the seller nothing they can
+      // act on. A47 · sent · 2 days ago tells them where to look.
+      if (!entry.blockingOrders.some((existing) => existing.reference === order.reference)) {
+        entry.blockingOrders.push({
+          reference: order.reference,
+          status: order.status,
+          createdAt: order.created_at,
+        });
+      }
+    }
   }
 
   for (const entry of Object.values(usage)) {
+    entry.blockingOrders.sort((a, b) => a.createdAt.localeCompare(b.createdAt));
     if (entry.openCount > 0) entry.verdict = 'blocked';
-    else if (entry.orderCount > 0) entry.verdict = 'deactivate-only';
+    else if (entry.orderCount > 0) entry.verdict = 'retire-only';
   }
 
   return usage;
+}
+
+/** "2 days ago" — enough for a seller to judge whether an order is a phantom. */
+export function describeAge(iso: string): string {
+  const minutes = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 60000));
+  if (minutes < 1) return 'just now';
+  if (minutes < 60) return `${minutes} min ago`;
+  const hours = Math.round(minutes / 60);
+  if (hours < 24) return `${hours} hour${hours === 1 ? '' : 's'} ago`;
+  const days = Math.round(hours / 24);
+  return `${days} day${days === 1 ? '' : 's'} ago`;
 }
 
 export interface ItemDraft {
@@ -150,20 +189,23 @@ export interface ItemDraft {
 export interface SaveResult {
   itemId: string;
   deleted: number;
-  deactivated: number;
+  retired: number;
+  variants: VariantRecord[];
 }
 
 /**
- * Writes the product and its variants.
+ * Writes the product, its variants and its removals — in one transaction.
  *
- * PostgREST has no transaction across requests, so this is ordered so that a
- * failure part-way leaves something coherent: the item first, then variant
- * writes, then removals last. A half-saved product is recoverable by opening it
- * again; a half-removed one would not be.
+ * This is a single call to public.save_product(), which is SECURITY INVOKER, so
+ * RLS applies exactly as it did to the sequence of PostgREST calls this
+ * replaced. It either all happens or none of it does: a failure part-way used
+ * to leave an item with some of its variants written, which is the kind of
+ * corruption nobody notices until a price is wrong on the storefront.
  *
- * `stock` is omitted entirely for availability tenants — they are not shown a
- * stock figure, and writing one would either invent data or silently zero what
- * is already there.
+ * The RPC executes decisions; it does not make them. `classifyVariants` above
+ * decides what may be deleted and what must be retired, because that question
+ * is about order history and belongs with the code that explains it to the
+ * seller. Blocked removals are dropped here and never reach the database.
  */
 export async function saveProduct(
   client: ChopChopClient,
@@ -171,88 +213,69 @@ export async function saveProduct(
   draft: ItemDraft,
   cells: Cell[],
   removals: { id: string; verdict: RemovalVerdict }[],
-  options: { tracksStock: boolean },
 ): Promise<SaveResult> {
-  const itemPayload = {
-    tenant_id: tenantId,
-    name: draft.name.trim(),
-    description: draft.description.trim() || null,
-    image_url: draft.imageUrl.trim() || null,
-    category_id: draft.categoryId,
-    active: draft.active,
-  };
-
-  let itemId = draft.id;
-
-  if (itemId) {
-    const { error } = await client.from('items').update(itemPayload).eq('id', itemId);
-    if (error) throw new Error(`Could not save the product: ${error.message}`);
-  } else {
-    const { data, error } = await client.from('items').insert(itemPayload).select('id').single();
-    if (error) throw new Error(`Could not save the product: ${error.message}`);
-    itemId = data.id;
-  }
-
-  const inserts = cells
-    .filter((cell) => !cell.variantId)
-    .map((cell) => ({
-      tenant_id: tenantId,
-      item_id: itemId,
-      attributes: cell.attributes,
-      price: Number(cell.price),
-      available: cell.available,
-      sku: cell.sku.trim() || null,
-      ...(options.tracksStock ? { stock: Number(cell.stock || 0) } : {}),
+  const actionable = removals
+    .filter((removal) => removal.verdict !== 'blocked')
+    .map((removal) => ({
+      id: removal.id,
+      action: removal.verdict === 'deletable' ? 'delete' : 'retire',
     }));
 
-  if (inserts.length) {
-    const { error } = await client.from('variants').insert(inserts);
-    if (error) throw new Error(`Could not add the new variants: ${error.message}`);
-  }
+  const { data, error } = await client.rpc('save_product', {
+    p_tenant_id: tenantId,
+    p_item: {
+      id: draft.id,
+      name: draft.name.trim(),
+      description: draft.description.trim(),
+      image_url: draft.imageUrl.trim(),
+      category_id: draft.categoryId,
+      active: draft.active,
+    },
+    p_variants: cells.map((cell) => ({
+      id: cell.variantId,
+      attributes: cell.attributes,
+      price: Number(cell.price),
+      // Sent regardless; the RPC ignores it for an availability tenant rather
+      // than trusting the client to know which mode the business is in.
+      stock: cell.stock.trim() === '' ? null : Number(cell.stock),
+      available: cell.available,
+      sku: cell.sku.trim(),
+    })),
+    p_removals: actionable,
+  });
 
-  for (const cell of cells) {
-    if (!cell.variantId) continue;
-    const { error } = await client
-      .from('variants')
-      .update({
-        attributes: cell.attributes,
-        price: Number(cell.price),
-        available: cell.available,
-        sku: cell.sku.trim() || null,
-        ...(options.tracksStock ? { stock: Number(cell.stock || 0) } : {}),
-      })
-      .eq('id', cell.variantId);
-    if (error) throw new Error(`Could not update a variant: ${error.message}`);
-  }
+  if (error) throw new Error(`Could not save the product: ${error.message}`);
 
-  let deleted = 0;
-  let deactivated = 0;
+  const saved = data as unknown as {
+    item: ItemRow;
+    variants: {
+      id: string;
+      attributes: unknown;
+      price: number | string;
+      stock: number | string;
+      available: boolean;
+      sku: string | null;
+      retired_at: string | null;
+    }[];
+  };
 
-  for (const removal of removals) {
-    if (removal.verdict === 'blocked') continue;
+  // Counted from what came back, not from what was asked for: a delete whose
+  // variant was ordered in the seconds the modal was open falls back to a
+  // retire inside the RPC, and the seller should be told what happened.
+  const survivors = new Set(saved.variants.map((row) => row.id));
 
-    if (removal.verdict === 'deletable') {
-      const { error } = await client.from('variants').delete().eq('id', removal.id);
-      // Belt and braces: the classification could be a moment stale if an order
-      // arrived while the modal was open. Fall back to deactivating rather than
-      // surfacing a foreign key violation.
-      if (error) {
-        const { error: deactivateError } = await client
-          .from('variants')
-          .update({ available: false })
-          .eq('id', removal.id);
-        if (deactivateError) throw new Error(`Could not remove a variant: ${deactivateError.message}`);
-        deactivated += 1;
-      } else {
-        deleted += 1;
-      }
-      continue;
-    }
-
-    const { error } = await client.from('variants').update({ available: false }).eq('id', removal.id);
-    if (error) throw new Error(`Could not deactivate a variant: ${error.message}`);
-    deactivated += 1;
-  }
-
-  return { itemId: itemId!, deleted, deactivated };
+  return {
+    itemId: saved.item.id,
+    deleted: actionable.filter((removal) => !survivors.has(removal.id)).length,
+    retired: actionable.filter((removal) => survivors.has(removal.id)).length,
+    variants: saved.variants.map((row) => ({
+      id: row.id,
+      attributes: (row.attributes ?? {}) as Record<string, string>,
+      price: Number(row.price),
+      stock: Number(row.stock),
+      available: row.available,
+      sku: row.sku,
+      retiredAt: row.retired_at,
+    })),
+  };
 }

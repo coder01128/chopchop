@@ -60,6 +60,20 @@ Only two things branch on tenant config: the attribute list, and the row anatomy
 `stock_mode` decides a stock field vs an in-stock toggle). If a third appears,
 the abstraction is leaking.
 
+**Saving goes through one RPC.** `public.save_product()` wraps the item write,
+the variant inserts and updates, and the removals in a single transaction — it
+all happens or none of it does. It is `SECURITY INVOKER`, so RLS applies exactly
+as it did to the PostgREST calls it replaced; it is a transaction wrapper, not a
+way around the policies. `tests/save-product-rpc.test.ts` asserts both the
+rollback and the refusal of a foreign `tenant_id`.
+
+**Retired is not unavailable.** `available` is the everyday in-stock toggle.
+`variants.retired_at` means the seller removed the variant and Postgres refused
+to delete it, because it appears in order history (`order_items.variant_id` is
+`ON DELETE RESTRICT`). Retired variants are hidden from buyers by policy, listed
+in their own block in the editor, and restorable from there. A sold-out variant
+still renders on the storefront, greyed; a retired one does not.
+
 ### Which tenant?
 
 The **dashboard** resolves it from the signed-in user's `tenant_users` row. No

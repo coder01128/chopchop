@@ -9,6 +9,7 @@ import {
   type CellError,
   type CellStore,
   type ProductShape,
+  type VariantRecord,
 } from './variant-model';
 import styles from './VariantEditor.module.css';
 
@@ -34,6 +35,8 @@ export function VariantEditor({
   stockMode,
   errors,
   lockedAttributes,
+  retired,
+  onRestore,
 }: {
   palette: TenantAttribute[];
   shape: ProductShape;
@@ -46,6 +49,9 @@ export function VariantEditor({
   errors: CellError[];
   /** Attributes already in use by saved variants — cannot be switched off. */
   lockedAttributes: string[];
+  /** Removed, but kept because they appear in order history. */
+  retired: VariantRecord[];
+  onRestore: (variant: VariantRecord) => void;
 }) {
   const cells = useMemo(() => activeCells(shape, store), [shape, store]);
   const tracksStock = stockMode === 'counted';
@@ -286,6 +292,34 @@ export function VariantEditor({
             );
           })}
         </div>
+      )}
+
+      {retired.length > 0 && (
+        <section className={styles.retiredBlock}>
+          <h4 className={styles.retiredTitle}>Retired</h4>
+          <p className={styles.retiredLead}>
+            You removed these, and they appear in past orders — so they were kept rather than
+            deleted, to leave order history intact. Buyers cannot see them.
+          </p>
+          <ul className={styles.retiredList}>
+            {retired.map((variant) => (
+              <li key={variant.id} className={styles.retiredItem}>
+                <span className={styles.retiredName}>
+                  {Object.entries(variant.attributes)
+                    .map(([name, value]) => `${name} ${value}`)
+                    .join(' · ') || 'this product'}
+                </span>
+                <button
+                  type="button"
+                  className={styles.restoreButton}
+                  onClick={() => onRestore(variant)}
+                >
+                  Restore
+                </button>
+              </li>
+            ))}
+          </ul>
+        </section>
       )}
     </section>
   );
