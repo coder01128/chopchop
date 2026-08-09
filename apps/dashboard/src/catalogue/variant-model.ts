@@ -271,7 +271,12 @@ export function validateCells(
       if (!Number.isFinite(parsed)) {
         errors.push({ key: cell.key, message: `${where}: "${cell.stock}" is not a stock figure.` });
       } else if (parsed < 0) {
-        errors.push({ key: cell.key, message: `${where}: stock cannot be negative.` });
+        // A count below zero is not always a typo: confirming an order
+        // decrements past zero rather than refusing, because the goods have
+        // already left the shelf. Either way the seller has to recount before
+        // this product can be saved, so the message asks for that rather than
+        // accusing them of entering it.
+        errors.push({ key: cell.key, message: `${where}: stock is below zero — recount and enter the real figure.` });
       }
     }
   }

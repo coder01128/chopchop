@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { getSupabaseClient, useTenant } from '@chopchop/shared';
 import {
-  confirmWithQuantities,
+  confirmOrder,
   loadOrderLines,
   money,
   transitionOrder,
@@ -230,8 +230,14 @@ export function OrderDetail({
                     setConfirming(true);
                     return;
                   }
-                  if (next === 'confirmed' && adjustsQuantity) {
-                    void run(() => confirmWithQuantities(client, order.id, lines));
+                  // Every confirm goes through the RPC, weight tenant or not:
+                  // it is the one transition that moves stock, and that has to
+                  // happen in the same transaction as the lines.
+                  if (next === 'confirmed') {
+                    void run(async () => {
+                      const confirmed = await confirmOrder(client, tenant.id, order.id, lines);
+                      setLines(confirmed.lines);
+                    });
                     return;
                   }
                   void run(() => transitionOrder(client, order.id, next));

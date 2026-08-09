@@ -97,6 +97,24 @@
   color: var(--accent);
 }
 
+/*
+ * A count that has gone below zero. Confirming an order decrements past zero
+ * rather than refusing, so this is the seller's prompt to recount — it has to
+ * read as a flag, not as ordinary metadata.
+ */
+.belowZero {
+  align-self: flex-start;
+  margin-top: 0.15rem;
+  border: 1px solid var(--danger);
+  border-radius: var(--radius);
+  padding: 0.1rem 0.35rem;
+  color: var(--danger);
+  font-family: var(--mono);
+  font-size: 0.58rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
 .activeToggle {
   display: flex;
   align-items: center;

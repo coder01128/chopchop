@@ -287,6 +287,63 @@ describe('orders are not writable across tenants', () => {
     expect(Number(after!.qty_confirmed ?? 0)).not.toBe(999);
   });
 
+  /**
+   * confirm_order is the one call that moves stock, so a cross-tenant confirm
+   * would not just corrupt another tenant's queue — it would empty their shelf.
+   * SECURITY INVOKER means RLS still applies, and the membership check inside
+   * the function means a foreign tenant_id is refused outright rather than
+   * silently filtered to nothing.
+   */
+  it('cannot confirm another tenant\'s order', async () => {
+    const { data: line } = await admin
+      .from('order_items')
+      .select('id, variant_id')
+      .eq('id', shoesLineId)
+      .single();
+    const { data: before } = await admin
+      .from('variants')
+      .select('stock')
+      .eq('id', line!.variant_id)
+      .single();
+
+    // Both shapes: a foreign tenant_id in the payload, and the caller's own
+    // tenant_id pointed at somebody else's order.
+    for (const payload of [
+      { p_tenant_id: shoesId, p_order_id: shoesOrderId },
+      { p_tenant_id: butcheryId, p_order_id: shoesOrderId },
+    ]) {
+      const { error } = await butcheryClient.rpc('confirm_order', {
+        ...payload,
+        p_lines: [{ id: shoesLineId, qty_confirmed: 99, line_total: 99 }],
+      });
+      expect(
+        error,
+        `CROSS-TENANT CONFIRM accepted for ${JSON.stringify(payload)}. confirm_order ` +
+          'must refuse a foreign tenant explicitly.',
+      ).not.toBeNull();
+    }
+
+    const { data: after } = await admin
+      .from('orders')
+      .select('status')
+      .eq('id', shoesOrderId)
+      .single();
+    expect(
+      after!.status,
+      'CROSS-TENANT WRITE via confirm_order: another tenant\'s order was moved.',
+    ).toBe(shoesOrderStatus);
+
+    const { data: stock } = await admin
+      .from('variants')
+      .select('stock')
+      .eq('id', line!.variant_id)
+      .single();
+    expect(
+      Number(stock!.stock),
+      'CROSS-TENANT STOCK MOVE via confirm_order: another tenant\'s count changed.',
+    ).toBe(Number(before!.stock));
+  });
+
   it('cannot delete another tenant\'s order', async () => {
     const { data } = await butcheryClient.from('orders').delete().eq('id', shoesOrderId).select();
     expect(data ?? [], 'A seller deleted another tenant\'s order.').toEqual([]);
@@ -718,6 +775,30 @@ describe('buyer sessions (anonymous auth users)', () => {
     expect(after!.status, 'The order status changed despite the update being refused.').toBe('sent');
   });
 
+  /**
+   * A buyer holds `authenticated`, so it holds execute on confirm_order — the
+   * grant cannot separate them. What shuts it out is the membership check: no
+   * tenant_users row means user_tenant_ids() returns nothing and every call
+   * raises. Confirming is the seller's promise to fulfil, and it moves stock.
+   */
+  it('cannot call confirm_order at all', async () => {
+    for (const tenantId of [butcheryId, shoesId]) {
+      const { error } = await buyerA.rpc('confirm_order', {
+        p_tenant_id: tenantId,
+        p_order_id: orderA,
+        p_lines: [],
+      });
+      expect(
+        error,
+        `A BUYER CONFIRMED AN ORDER against tenant ${tenantId}. Confirming is the ` +
+          'seller\'s promise to fulfil, and it decrements stock.',
+      ).not.toBeNull();
+    }
+
+    const { data: after } = await admin.from('orders').select('status').eq('id', orderA).single();
+    expect(after!.status, 'A buyer moved its own order to confirmed.').not.toBe('confirmed');
+  });
+
   it('cannot delete its own order', async () => {
     const { data } = await buyerA.from('orders').delete().eq('id', orderA).select();
     expect(data ?? [], 'A buyer deleted its own order.').toEqual([]);
@@ -830,6 +911,37 @@ describe('buyer sessions (anonymous auth users)', () => {
         'RESTRICTIVE POLICY FAILED on "items": a buyer session wrote to the ' +
           'tenant\'s catalogue.',
       ).toEqual([]);
+
+      // confirm_order's membership check passes for this fixture — the buyer
+      // now has a tenant_users row. What must still hold it shut is RLS: the
+      // function is SECURITY INVOKER, so the restrictive not-anonymous policy
+      // on `orders` is the only thing between a buyer session and the seller's
+      // queue.
+      const { data: seller } = await admin
+        .from('orders')
+        .select('status')
+        .eq('id', butcheryOrderId)
+        .single();
+      const { error: confirmError } = await buyerA.rpc('confirm_order', {
+        p_tenant_id: butcheryId,
+        p_order_id: butcheryOrderId,
+        p_lines: [],
+      });
+      const { data: sellerAfter } = await admin
+        .from('orders')
+        .select('status')
+        .eq('id', butcheryOrderId)
+        .single();
+      expect(
+        sellerAfter!.status,
+        'RESTRICTIVE POLICY FAILED on "orders": a buyer session holding a ' +
+          'tenant_users row confirmed the seller\'s order through confirm_order.',
+      ).toBe(seller!.status);
+      expect(
+        confirmError,
+        'confirm_order returned success to a buyer session. Even with nothing ' +
+          'written, that is the wrong answer — it is not a call a buyer may make.',
+      ).not.toBeNull();
     } finally {
       await admin.from('tenant_users').delete().eq('id', link!.id);
     }

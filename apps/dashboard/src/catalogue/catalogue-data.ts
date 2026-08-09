@@ -24,6 +24,18 @@ export interface ItemSummary {
   variantCount: number;
   minPrice: number | null;
   maxPrice: number | null;
+  /**
+   * Variants of this product whose count has gone below zero.
+   *
+   * Confirming an order decrements past zero rather than refusing — the seller
+   * has already cut the meat, and a database refusal does not un-cut it. The
+   * count is left negative deliberately, as a prompt to recount, so the card
+   * has to say so. Clamping it to zero would hide the only signal there is.
+   *
+   * Not gated on `stock_mode`: an availability tenant never decrements, so this
+   * is zero for them without the catalogue needing to know which mode it is in.
+   */
+  belowZeroCount: number;
 }
 
 export async function loadCategories(
@@ -52,26 +64,28 @@ export async function loadItems(
 ): Promise<ItemSummary[]> {
   const [items, variants] = await Promise.all([
     client.from('items').select('*').eq('tenant_id', tenantId).order('sort_order').order('name'),
-    client.from('variants').select('item_id, price').eq('tenant_id', tenantId),
+    client.from('variants').select('item_id, price, stock').eq('tenant_id', tenantId),
   ]);
 
   if (items.error) throw new Error(`Could not load products: ${items.error.message}`);
   if (variants.error) throw new Error(`Could not load prices: ${variants.error.message}`);
 
-  const byItem = new Map<string, number[]>();
+  const byItem = new Map<string, { prices: number[]; belowZero: number }>();
   for (const variant of variants.data ?? []) {
-    const prices = byItem.get(variant.item_id) ?? [];
-    prices.push(Number(variant.price));
-    byItem.set(variant.item_id, prices);
+    const entry = byItem.get(variant.item_id) ?? { prices: [], belowZero: 0 };
+    entry.prices.push(Number(variant.price));
+    if (Number(variant.stock) < 0) entry.belowZero += 1;
+    byItem.set(variant.item_id, entry);
   }
 
   return (items.data ?? []).map((item) => {
-    const prices = byItem.get(item.id) ?? [];
+    const { prices, belowZero } = byItem.get(item.id) ?? { prices: [], belowZero: 0 };
     return {
       item,
       variantCount: prices.length,
       minPrice: prices.length ? Math.min(...prices) : null,
       maxPrice: prices.length ? Math.max(...prices) : null,
+      belowZeroCount: belowZero,
     };
   });
 }

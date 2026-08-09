@@ -376,6 +376,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      confirm_order: {
+        Args: { p_lines?: Json; p_order_id: string; p_tenant_id: string }
+        Returns: Json
+      }
       is_active_tenant: { Args: { p_tenant_id: string }; Returns: boolean }
       is_anonymous_user: { Args: never; Returns: boolean }
       is_buyer_order: { Args: { p_order_id: string }; Returns: boolean }
@@ -383,6 +387,10 @@ export type Database = {
       order_belongs_to_tenant: {
         Args: { p_order_id: string; p_tenant_id: string }
         Returns: boolean
+      }
+      order_with_lines: {
+        Args: { p_order_id: string; p_tenant_id: string }
+        Returns: Json
       }
       save_product: {
         Args: {

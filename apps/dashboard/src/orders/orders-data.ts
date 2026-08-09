@@ -1,5 +1,5 @@
 import type { ChopChopClient, Database, SaleMode } from '@chopchop/shared';
-import { lineTotalFor, orderTotalFor, type OrderLine } from './order-model';
+import { lineTotalFor, type OrderLine } from './order-model';
 
 export type OrderRow = Database['public']['Tables']['orders']['Row'];
 export type OrderStatus = Database['public']['Enums']['order_status'];
@@ -92,43 +92,65 @@ export async function transitionOrder(
 }
 
 /**
- * Confirming a weight order: the seller has cut and weighed, and the quantities
- * they entered become the real totals.
+ * Confirming an order: the seller commits to fulfilling it.
  *
- * `line_total` is a stored column rather than a generated one, so it is written
- * here, and the order total is recomputed from the lines — until this point it
- * was an estimate.
+ * One call to public.confirm_order(), which is SECURITY INVOKER, so RLS applies
+ * exactly as it did to the loop of PostgREST updates this replaced. It writes
+ * every line, stamps the order, and — when the tenant counts stock — decrements
+ * `variants.stock`, all in one transaction. The decrement is why the loop had
+ * to go: stock moving for some lines and not others is not something the seller
+ * can see, let alone correct.
  *
- * Not atomic across lines, and it does not need to be in the way `save_product`
- * did: every write here is idempotent and derived from values the seller can
- * see, so a failure part-way is re-runnable by pressing Confirm again rather
- * than leaving a half-built product.
+ * The arithmetic stays in `order-model.ts`, where it is tested without a
+ * browser. `line_total` is computed here and written by the RPC; the RPC
+ * executes the decision, it does not make it.
+ *
+ * No stock options are passed. Whether this business counts stock is read from
+ * the tenant row inside the function — the client does not get a say.
  */
-export async function confirmWithQuantities(
+export async function confirmOrder(
   client: ChopChopClient,
+  tenantId: string,
   orderId: string,
   lines: OrderLine[],
-): Promise<void> {
-  for (const line of lines) {
-    const { error } = await client
-      .from('order_items')
-      .update({
-        qty_confirmed: line.qty_confirmed,
-        line_total: lineTotalFor(line),
-      })
-      .eq('id', line.id);
-    if (error) throw new Error(`Could not save the weighed quantity: ${error.message}`);
-  }
+): Promise<{ order: OrderRow; lines: OrderLine[] }> {
+  const { data, error } = await client.rpc('confirm_order', {
+    p_tenant_id: tenantId,
+    p_order_id: orderId,
+    p_lines: lines.map((line) => ({
+      id: line.id,
+      qty_confirmed: line.qty_confirmed,
+      line_total: lineTotalFor(line),
+    })),
+  });
 
-  const { error } = await client
-    .from('orders')
-    .update({
-      status: 'confirmed',
-      confirmed_at: new Date().toISOString(),
-      total: orderTotalFor(lines),
-    })
-    .eq('id', orderId);
   if (error) throw new Error(`Could not confirm the order: ${error.message}`);
+
+  const confirmed = data as unknown as {
+    order: OrderRow;
+    lines: {
+      id: string;
+      name_snapshot: string;
+      price_snapshot: number | string;
+      qty: number | string;
+      qty_confirmed: number | string | null;
+      line_total: number | string;
+    }[];
+  };
+
+  // Returned by the RPC so the screen reconciles without a second trip — and so
+  // a re-confirm, which changes nothing, still shows what is actually stored.
+  return {
+    order: confirmed.order,
+    lines: confirmed.lines.map((row) => ({
+      id: row.id,
+      name_snapshot: row.name_snapshot,
+      price_snapshot: Number(row.price_snapshot),
+      qty: Number(row.qty),
+      qty_confirmed: row.qty_confirmed === null ? null : Number(row.qty_confirmed),
+      line_total: Number(row.line_total),
+    })),
+  };
 }
 
 /** Formats money the one way the whole dashboard formats money. */

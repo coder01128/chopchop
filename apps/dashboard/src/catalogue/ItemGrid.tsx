@@ -1,4 +1,3 @@
-import { useTenant } from '@chopchop/shared';
 import type { ItemSummary } from './catalogue-data';
 import styles from './ItemGrid.module.css';
 
@@ -28,8 +27,6 @@ export function ItemGrid({
   onToggleActive: (summary: ItemSummary) => void;
   onAdd: () => void;
 }) {
-  const tenant = useTenant();
-
   if (items.length === 0) {
     return (
       <div className={styles.empty}>
@@ -83,9 +80,18 @@ export function ItemGrid({
                 <span className={styles.name}>{summary.item.name}</span>
                 <span className={styles.meta}>
                   {summary.variantCount} option{summary.variantCount === 1 ? '' : 's'}
-                  {tenant.stockMode === 'counted' ? '' : ''}
                 </span>
                 <span className={styles.price}>{priceRange(summary)}</span>
+                {/* Confirming an order takes stock below zero rather than
+                    refusing — the goods have already left the shelf. The count
+                    is left negative on purpose, and this is the prompt to
+                    recount. No mode check: an availability tenant never
+                    decrements, so this never appears for them. */}
+                {summary.belowZeroCount > 0 && (
+                  <span className={styles.belowZero}>
+                    {summary.belowZeroCount} below zero — recount
+                  </span>
+                )}
               </span>
             </button>
 
