@@ -222,6 +222,105 @@ describeLeakDirection(
   () => ({ name: 'demo-butchery', id: butcheryId }),
 );
 
+/**
+ * Orders specifically. The tenant-against-tenant sweep above proves tenant A
+ * cannot *read* tenant B's orders; these prove it cannot write or move them
+ * either. A silent no-op is the expected shape — RLS filters the row out, so
+ * the UPDATE matches nothing rather than erroring.
+ */
+describe('orders are not writable across tenants', () => {
+  let shoesOrderId: string;
+  let shoesOrderStatus: string;
+  let shoesLineId: string;
+
+  beforeAll(async () => {
+    const { data: order } = await admin
+      .from('orders')
+      .select('id, status')
+      .eq('tenant_id', shoesId)
+      .limit(1)
+      .single();
+    shoesOrderId = order!.id;
+    shoesOrderStatus = order!.status;
+
+    const { data: line } = await admin
+      .from('order_items')
+      .select('id')
+      .eq('order_id', shoesOrderId)
+      .limit(1)
+      .single();
+    shoesLineId = line!.id;
+  });
+
+  it('cannot transition another tenant\'s order', async () => {
+    const { data } = await butcheryClient
+      .from('orders')
+      .update({ status: 'cancelled' })
+      .eq('id', shoesOrderId)
+      .select();
+    expect(data ?? [], 'A seller moved another tenant\'s order.').toEqual([]);
+
+    const { data: after } = await admin
+      .from('orders')
+      .select('status')
+      .eq('id', shoesOrderId)
+      .single();
+    expect(
+      after!.status,
+      'CROSS-TENANT WRITE on "orders": the status of another tenant\'s order changed.',
+    ).toBe(shoesOrderStatus);
+  });
+
+  it('cannot write qty_confirmed on another tenant\'s order line', async () => {
+    const { data } = await butcheryClient
+      .from('order_items')
+      .update({ qty_confirmed: 999 })
+      .eq('id', shoesLineId)
+      .select();
+    expect(data ?? [], 'A seller wrote a weighed quantity onto another tenant\'s order.').toEqual([]);
+
+    const { data: after } = await admin
+      .from('order_items')
+      .select('qty_confirmed')
+      .eq('id', shoesLineId)
+      .single();
+    expect(Number(after!.qty_confirmed ?? 0)).not.toBe(999);
+  });
+
+  it('cannot delete another tenant\'s order', async () => {
+    const { data } = await butcheryClient.from('orders').delete().eq('id', shoesOrderId).select();
+    expect(data ?? [], 'A seller deleted another tenant\'s order.').toEqual([]);
+
+    const { count } = await admin
+      .from('orders')
+      .select('*', { count: 'exact', head: true })
+      .eq('id', shoesOrderId);
+    expect(count, 'Another tenant\'s order was deleted.').toBe(1);
+  });
+
+  it('can move its own order, and put it back', async () => {
+    // Guards against the assertions above passing because *nothing* can be
+    // updated — the leak test's recurring failure mode.
+    const { data: own } = await admin
+      .from('orders')
+      .select('id, status')
+      .eq('tenant_id', butcheryId)
+      .eq('status', 'sent')
+      .limit(1)
+      .single();
+
+    const { data: moved } = await butcheryClient
+      .from('orders')
+      .update({ status: 'received' })
+      .eq('id', own!.id)
+      .select();
+    expect(moved ?? [], 'A seller cannot move their own order — the checks above are vacuous.')
+      .toHaveLength(1);
+
+    await admin.from('orders').update({ status: own!.status }).eq('id', own!.id);
+  });
+});
+
 describe('anonymous storefront', () => {
   it('cannot list orders', async () => {
     const anon = anonClient();

@@ -74,6 +74,44 @@ to delete it, because it appears in order history (`order_items.variant_id` is
 in their own block in the editor, and restorable from there. A sold-out variant
 still renders on the storefront, greyed; a retired one does not.
 
+### The order queue
+
+`apps/dashboard/src/orders/` — the screen a seller lives on. Rules live in
+`order-model.ts` as pure functions, tested in `tests/order-model.test.ts`.
+
+Forward only: `sent → received → confirmed → ready → completed`, plus
+`sent → cancelled` for a phantom. **`received` is an acknowledgement,
+`confirmed` is a promise** — they stay separate and no control performs both.
+There are no backward moves in v1.
+
+`BLOCKING_STATUSES` in `order-model.ts` is the single definition of which
+statuses hold a variant hostage; the ticket 03B removal classifier imports it
+rather than keeping a copy. That is what makes dismissing a phantom actually
+release the products it was holding.
+
+Staleness is one named constant, `STALE_AFTER_MS`, computed at render time from
+`created_at`. No stored column, no cron, no background job, and **nothing
+auto-cancels** — age is a prompt to look, not a verdict.
+
+Order lines render from the `order_items` snapshot columns alone. `variants` is
+never joined: a variant retired since the order was placed would drop out of the
+join, and the snapshots exist precisely so history does not depend on a mutable
+product row.
+
+Confirming on a `weight` tenant is where `qty_confirmed` is entered — the seller
+cuts, weighs, and the line totals follow. `line_total` is a stored column, not
+generated, so confirmation writes it. A `unit` tenant sees no quantity control
+and no weight language anywhere.
+
+```bash
+node scripts/seed-orders.mjs
+```
+
+Fills both demo tenants with orders in every status, including one `sent` order
+backdated past the staleness window and one minutes old. Reverse it with
+`node scripts/seed-orders.mjs --down` — every row it writes carries a `Q4-`
+reference prefix and the teardown selects on exactly that.
+
 ### Which tenant?
 
 The **dashboard** resolves it from the signed-in user's `tenant_users` row. No

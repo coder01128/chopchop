@@ -3,8 +3,9 @@ import { AuthProvider, useAuth } from './auth/AuthProvider';
 import { SignIn } from './auth/SignIn';
 import { TenantGate } from './tenant/TenantGate';
 import { Shell } from './shell/Shell';
-import { Import, Orders } from './routes/Placeholder';
+import { Import } from './routes/Placeholder';
 import { CataloguePage } from './catalogue/CataloguePage';
+import { OrdersPage } from './orders/OrdersPage';
 import { Settings } from './routes/Settings';
 import { Notice } from './ui/Notice';
 
@@ -26,7 +27,7 @@ function Protected() {
     <TenantGate>
       <Routes>
         <Route element={<Shell />}>
-          <Route path="/orders" element={<Orders />} />
+          <Route path="/orders" element={<OrdersPage />} />
           <Route path="/catalogue" element={<CataloguePage />} />
           <Route path="/import" element={<Import />} />
           <Route path="/settings" element={<Settings />} />

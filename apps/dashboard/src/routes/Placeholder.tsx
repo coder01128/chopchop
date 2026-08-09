@@ -26,22 +26,6 @@ export function Placeholder({
   );
 }
 
-export const Orders = () => (
-  <Placeholder
-    title="Orders"
-    ticket="Not built yet"
-    blurb="The order queue, its status flow and the prefilled WhatsApp reply land in a later ticket."
-  />
-);
-
-export const Catalogue = () => (
-  <Placeholder
-    title="Catalogue"
-    ticket="Not built yet"
-    blurb="Categories, items and the variant editor generated from attribute_schema land in a later ticket."
-  />
-);
-
 export const Import = () => (
   <Placeholder
     title="Import"

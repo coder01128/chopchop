@@ -1,4 +1,5 @@
 import type { ChopChopClient, Database } from '@chopchop/shared';
+import { BLOCKING_STATUSES } from '../orders/order-model';
 import type { Cell, VariantRecord } from './variant-model';
 
 export type CategoryRow = Database['public']['Tables']['categories']['Row'];
@@ -6,11 +7,17 @@ export type ItemRow = Database['public']['Tables']['items']['Row'];
 export type OrderStatus = Database['public']['Enums']['order_status'];
 
 /**
- * Statuses where the order is still live. A `sent` order may be a phantom the
- * buyer never actually sent, but it still references the variant, so deleting
- * one would throw either way.
+ * Statuses where the order is still live, and therefore still holds its
+ * variants. A `sent` order may be a phantom the buyer never actually sent, but
+ * it still references the variant, so deleting one would throw either way —
+ * which is why the queue lets the seller dismiss it.
+ *
+ * Imported, not redeclared: `cancelled` dropping out of this set is exactly
+ * what makes dismissal release a variant. Two copies of the list would drift,
+ * and the symptom would be a seller unable to delete a variant with nothing on
+ * screen to explain why.
  */
-const OPEN_STATUSES: OrderStatus[] = ['sent', 'received', 'confirmed', 'ready'];
+const OPEN_STATUSES = BLOCKING_STATUSES;
 
 export interface ItemSummary {
   item: ItemRow;
