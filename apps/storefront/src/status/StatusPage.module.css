@@ -1,0 +1,157 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.loading {
+  opacity: 0.75;
+}
+
+.error {
+  border: 1px solid var(--danger);
+  border-radius: var(--radius);
+  padding: 0.7rem 0.85rem;
+  color: var(--danger);
+}
+
+.heading {
+  margin: 0;
+  font-size: 1.55rem;
+  letter-spacing: -0.02em;
+}
+
+/* A live order gets the accent; a finished or dismissed one does not. */
+.heading[data-live] {
+  color: var(--accent);
+}
+
+.body {
+  margin: 0;
+  font-size: 0.95rem;
+  opacity: 0.85;
+  max-width: 34rem;
+}
+
+.wa {
+  align-self: flex-start;
+  border: 1px solid var(--wa);
+  border-radius: var(--radius);
+  background: var(--wa);
+  padding: 0.65rem 0.95rem;
+  color: #08160c;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.lines {
+  list-style: none;
+  margin: 0.4rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.line {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--panel);
+  padding: 0.6rem 0.7rem;
+}
+
+.lineTop {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.8rem;
+}
+
+.name {
+  font-weight: 600;
+}
+
+.amount {
+  white-space: nowrap;
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.lineMeta {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.2rem;
+  font-family: var(--mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.06em;
+  opacity: 0.85;
+}
+
+/* The moment the estimate became real. */
+.weighed {
+  border: 1px solid var(--accent);
+  border-radius: var(--radius);
+  padding: 0.05rem 0.35rem;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-size: 0.58rem;
+}
+
+.total {
+  margin: 0;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  border-top: 1px solid var(--line);
+  padding-top: 0.7rem;
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.totalAmount {
+  font-family: var(--sans);
+  font-size: 1.25rem;
+  letter-spacing: normal;
+  text-transform: none;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.facts {
+  margin: 0;
+  display: grid;
+  gap: 0.55rem;
+}
+
+.facts dt {
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.facts dd {
+  margin: 0.1rem 0 0;
+  white-space: pre-line;
+}
+
+.device {
+  margin: 0.3rem 0 0;
+  border: 1px dashed var(--line);
+  border-radius: var(--radius);
+  padding: 0.65rem 0.75rem;
+  font-size: 0.85rem;
+  opacity: 0.85;
+}
+
+.back {
+  align-self: flex-start;
+  font-family: var(--mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}

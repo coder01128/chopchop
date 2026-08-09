@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" width="400" height="300" role="img" aria-label="Beach Slide">
+  <rect width="400" height="300" fill="#1d4257"/>
+  <rect width="400" height="300" fill="url(#g)"/>
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff" stop-opacity=".06"/>
+      <stop offset="1" stop-color="#000000" stop-opacity=".35"/>
+    </linearGradient>
+  </defs>
+  <path d="M104 186h176a18 18 0 0 1 0 36H104a18 18 0 0 1 0-36z" fill="#2c6a8a"/><path d="M128 186c14-40 46-56 78-46s40 30 40 46" stroke="#2c6a8a" stroke-width="24" fill="none" stroke-linecap="round"/>
+  <text x="200" y="272" text-anchor="middle" font-family="-apple-system, Segoe UI, Helvetica, Arial, sans-serif" font-size="21" font-weight="600" fill="#e9e6dd">Beach Slide</text>
+</svg>

@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" width="400" height="300" role="img" aria-label="School Lace-Up">
+  <rect width="400" height="300" fill="#26262e"/>
+  <rect width="400" height="300" fill="url(#g)"/>
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff" stop-opacity=".06"/>
+      <stop offset="1" stop-color="#000000" stop-opacity=".35"/>
+    </linearGradient>
+  </defs>
+  <path d="M92 176h94l44 24h72a20 20 0 0 1 0 40H92z" fill="#3f3f4e"/><path d="M92 176c0-34 12-52 34-58l24 34" fill="#3f3f4e"/>
+  <text x="200" y="272" text-anchor="middle" font-family="-apple-system, Segoe UI, Helvetica, Arial, sans-serif" font-size="21" font-weight="600" fill="#e9e6dd">School Lace-Up</text>
+</svg>

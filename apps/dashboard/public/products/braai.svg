@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" width="400" height="300" role="img" aria-label="Chicken Braai Pack">
+  <rect width="400" height="300" fill="#6b4a1e"/>
+  <rect width="400" height="300" fill="url(#g)"/>
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff" stop-opacity=".06"/>
+      <stop offset="1" stop-color="#000000" stop-opacity=".35"/>
+    </linearGradient>
+  </defs>
+  <rect x="92" y="90" width="216" height="106" rx="16" fill="#a3762f"/><rect x="108" y="106" width="184" height="8" rx="4" fill="#0f0f0d" fill-opacity=".3"/><rect x="108" y="130" width="184" height="8" rx="4" fill="#0f0f0d" fill-opacity=".3"/><rect x="108" y="154" width="184" height="8" rx="4" fill="#0f0f0d" fill-opacity=".3"/><rect x="108" y="178" width="184" height="8" rx="4" fill="#0f0f0d" fill-opacity=".3"/>
+  <text x="200" y="272" text-anchor="middle" font-family="-apple-system, Segoe UI, Helvetica, Arial, sans-serif" font-size="21" font-weight="600" fill="#e9e6dd">Chicken Braai Pack</text>
+</svg>

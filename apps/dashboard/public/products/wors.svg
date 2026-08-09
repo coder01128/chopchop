@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" width="400" height="300" role="img" aria-label="Boerewors">
+  <rect width="400" height="300" fill="#5a2b22"/>
+  <rect width="400" height="300" fill="url(#g)"/>
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff" stop-opacity=".06"/>
+      <stop offset="1" stop-color="#000000" stop-opacity=".35"/>
+    </linearGradient>
+  </defs>
+  <path d="M130 190c-28-58 22-104 70-88s54 78 22 96-88-12-64-70" stroke="#8f4632" stroke-width="30" fill="none" stroke-linecap="round"/>
+  <text x="200" y="272" text-anchor="middle" font-family="-apple-system, Segoe UI, Helvetica, Arial, sans-serif" font-size="21" font-weight="600" fill="#e9e6dd">Boerewors</text>
+</svg>

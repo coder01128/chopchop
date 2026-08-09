@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" width="400" height="300" role="img" aria-label="Rump Steak">
+  <rect width="400" height="300" fill="#5b2320"/>
+  <rect width="400" height="300" fill="url(#g)"/>
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff" stop-opacity=".06"/>
+      <stop offset="1" stop-color="#000000" stop-opacity=".35"/>
+    </linearGradient>
+  </defs>
+  <rect x="96" y="74" width="208" height="118" rx="18" fill="#8c3a33"/><path d="M120 168c40-46 120-46 160 0" stroke="#0f0f0d" stroke-opacity=".35" stroke-width="9" fill="none"/>
+  <text x="200" y="272" text-anchor="middle" font-family="-apple-system, Segoe UI, Helvetica, Arial, sans-serif" font-size="21" font-weight="600" fill="#e9e6dd">Rump Steak</text>
+</svg>

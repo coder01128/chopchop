@@ -609,12 +609,85 @@ describe('buyer sessions (anonymous auth users)', () => {
     ).toBe(true);
   });
 
+  // This and the line read below are exactly the two queries the storefront's
+  // status page makes. `buyer_id = auth.uid()` is the only thing standing
+  // between a buyer with somebody else's order id and their order.
   it('cannot read another buyer\'s order, even by id', async () => {
     const { data } = await buyerA.from('orders').select('*').eq('id', orderB);
     expect(
       data ?? [],
       `BUYER LEAK in "orders": buyer A read buyer B's order ${orderB} by id.`,
     ).toEqual([]);
+  });
+
+  /**
+   * place_order is the buyer's only write, and it takes a tenant id. A buyer
+   * browsing one shop must not be able to post an order into another one, and
+   * must not be able to reach across tenants for a cheaper variant — the
+   * function reads prices from `variants`, so a foreign variant id is the shape
+   * that attack would take.
+   */
+  it('cannot place an order against another tenant\'s variants', async () => {
+    const { data: foreign } = await admin
+      .from('variants')
+      .select('id')
+      .eq('tenant_id', shoesId)
+      .limit(1)
+      .single();
+
+    const before = await admin
+      .from('orders')
+      .select('*', { count: 'exact', head: true })
+      .eq('tenant_id', butcheryId);
+
+    const { error } = await buyerA.rpc('place_order', {
+      p_tenant_id: butcheryId,
+      p_lines: [{ variant_id: foreign!.id, qty: 1 }],
+      p_details: { customer_name: 'Leak Test', customer_phone: '27820000000' },
+    });
+
+    expect(
+      error,
+      'CROSS-TENANT ORDER: a buyer put another tenant\'s variant on an order. ' +
+        'place_order reads the price from that row — this is how a buyer would ' +
+        'shop one catalogue at another\'s prices.',
+    ).not.toBeNull();
+
+    const after = await admin
+      .from('orders')
+      .select('*', { count: 'exact', head: true })
+      .eq('tenant_id', butcheryId);
+    expect(after.count, 'A header survived the refused order.').toBe(before.count);
+  });
+
+  it('cannot place an order under another buyer\'s identity', async () => {
+    const { data: variant } = await admin
+      .from('variants')
+      .select('id')
+      .eq('tenant_id', butcheryId)
+      .limit(1)
+      .single();
+
+    // buyer_id is not a parameter — it is auth.uid() inside the function — so
+    // the only thing to assert is that a payload cannot smuggle one in.
+    const { data, error } = await buyerA.rpc('place_order', {
+      p_tenant_id: butcheryId,
+      p_lines: [{ variant_id: variant!.id, qty: 1 }],
+      p_details: {
+        customer_name: 'Leak Test',
+        customer_phone: '27820000000',
+        buyer_id: buyerBId,
+      },
+    });
+
+    expect(error, `place_order failed unexpectedly: ${error?.message}`).toBeNull();
+    const placed = data as { order: { id: string; buyer_id: string } };
+    createdOrders.push(placed.order.id);
+    expect(
+      placed.order.buyer_id,
+      'A buyer placed an order under another buyer\'s id. The status page is ' +
+        'keyed on buyer_id — that is somebody else\'s order history.',
+    ).toBe(buyerAId);
   });
 
   it('cannot read another buyer\'s order lines', async () => {
@@ -885,8 +958,11 @@ describe('buyer sessions (anonymous auth users)', () => {
           'to other people reached a buyer session holding a tenant_users row.',
       ).toEqual([]);
 
+      // Compared against every order this buyer owns, not just the first one:
+      // a buyer with two orders of their own is not a leak.
+      const own = new Set((orders ?? []).filter((o) => o.buyer_id === buyerAId).map((o) => o.id));
       const { data: lines } = await buyerA.from('order_items').select('*');
-      const foreignLines = (lines ?? []).filter((l) => l.order_id !== orderA);
+      const foreignLines = (lines ?? []).filter((l) => !own.has(l.order_id));
       expect(
         foreignLines,
         'RESTRICTIVE POLICY FAILED on "order_items": lines from other people\'s ' +

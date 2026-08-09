@@ -139,24 +139,29 @@ const shoesCategories = [
 // category, name, description, image_url, active, base price per variant
 // image_url null on at least one item and active false on at least one, in both
 // tenants — a card without a photo and a hidden product both have to render.
+//
+// Images are relative paths into each app's `public/products`, and the files are
+// committed. They were external URLs until ticket 05: cosmetically broken in the
+// dashboard, but a broken image on every product of a buyer-facing storefront is
+// the demo failing. A client demo does not depend on someone else's uptime.
 const butcheryItems = [
-  ['Beesvleis', 'Rump Steak', 'Aged 21 days, cut to order.', 'https://images.example.com/rump.jpg', true, { 'per kg': 189.9, 'per pack': 94.95 }],
+  ['Beesvleis', 'Rump Steak', 'Aged 21 days, cut to order.', '/products/rump.svg', true, { 'per kg': 189.9, 'per pack': 94.95 }],
   ['Beesvleis', 'Beef Mince', 'Lean mince, ideal for bolognaise.', null, true, { 'per kg': 129.9, 'per pack': 64.95 }],
-  ['Lam', 'Lamb Chops', 'Karoo lamb loin chops.', 'https://images.example.com/lamb-chops.jpg', true, { 'per kg': 259.9, 'per pack': 129.95 }],
-  ['Lam', 'Lamb Shank', 'Slow-cook cut, bone in.', 'https://images.example.com/shank.jpg', true, { 'per kg': 179.9, 'per pack': 89.95 }],
-  ['Hoender', 'Chicken Braai Pack', 'Mixed portions, marinated.', 'https://images.example.com/braai.jpg', true, { 'per kg': 89.9, 'per pack': 74.95 }],
-  ['Wors', 'Boerewors', 'Coarse ground, traditional spice.', 'https://images.example.com/wors.jpg', true, { 'per kg': 119.9, 'per pack': 59.95 }],
+  ['Lam', 'Lamb Chops', 'Karoo lamb loin chops.', '/products/lamb-chops.svg', true, { 'per kg': 259.9, 'per pack': 129.95 }],
+  ['Lam', 'Lamb Shank', 'Slow-cook cut, bone in.', '/products/shank.svg', true, { 'per kg': 179.9, 'per pack': 89.95 }],
+  ['Hoender', 'Chicken Braai Pack', 'Mixed portions, marinated.', '/products/braai.svg', true, { 'per kg': 89.9, 'per pack': 74.95 }],
+  ['Wors', 'Boerewors', 'Coarse ground, traditional spice.', '/products/wors.svg', true, { 'per kg': 119.9, 'per pack': 59.95 }],
   ['Wors', 'Biltong Off-cuts', 'Out of season — hidden from the storefront.', null, false, { 'per kg': 349.9, 'per pack': 174.95 }],
 ];
 
 // category, name, description, image_url, active, price, stock per size
 const shoesItems = [
-  ['Sneakers', 'Court Classic', 'Leather upper, cupsole.', 'https://images.example.com/court.jpg', true, 899.0, 4],
+  ['Sneakers', 'Court Classic', 'Leather upper, cupsole.', '/products/court.svg', true, 899.0, 4],
   ['Sneakers', 'Runner Lite', 'Mesh upper, foam midsole.', null, true, 749.0, 3],
-  ['Sneakers', 'Canvas Low', 'Canvas upper, vulcanised sole.', 'https://images.example.com/canvas.jpg', true, 449.0, 6],
-  ['School Shoes', 'School Lace-Up', 'Genuine leather, scuff resistant.', 'https://images.example.com/school-lace.jpg', true, 629.0, 5],
-  ['School Shoes', 'School Buckle', 'Discontinued line — hidden from the storefront.', 'https://images.example.com/school-buckle.jpg', false, 579.0, 2],
-  ['Sandals', 'Beach Slide', 'EVA slide, quick dry.', 'https://images.example.com/slide.jpg', true, 199.0, 8],
+  ['Sneakers', 'Canvas Low', 'Canvas upper, vulcanised sole.', '/products/canvas.svg', true, 449.0, 6],
+  ['School Shoes', 'School Lace-Up', 'Genuine leather, scuff resistant.', '/products/school-lace.svg', true, 629.0, 5],
+  ['School Shoes', 'School Buckle', 'Discontinued line — hidden from the storefront.', '/products/school-buckle.svg', false, 579.0, 2],
+  ['Sandals', 'Beach Slide', 'EVA slide, quick dry.', '/products/slide.svg', true, 199.0, 8],
 ];
 
 // ---------------------------------------------------------------------------

@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" width="400" height="300" role="img" aria-label="Lamb Chops">
+  <rect width="400" height="300" fill="#63302a"/>
+  <rect width="400" height="300" fill="url(#g)"/>
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff" stop-opacity=".06"/>
+      <stop offset="1" stop-color="#000000" stop-opacity=".35"/>
+    </linearGradient>
+  </defs>
+  <circle cx="152" cy="128" r="58" fill="#944b3d"/><circle cx="248" cy="140" r="48" fill="#944b3d"/><circle cx="152" cy="128" r="16" fill="#0f0f0d" fill-opacity=".35"/><circle cx="248" cy="140" r="13" fill="#0f0f0d" fill-opacity=".35"/>
+  <text x="200" y="272" text-anchor="middle" font-family="-apple-system, Segoe UI, Helvetica, Arial, sans-serif" font-size="21" font-weight="600" fill="#e9e6dd">Lamb Chops</text>
+</svg>

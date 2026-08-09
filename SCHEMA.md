@@ -174,7 +174,8 @@ Index on `attributes` (GIN) and on (`tenant_id`, `item_id`).
 | `buyer_id` | uuid FK → auth.users | the buyer's anonymous auth user — see Buyer identity below. Indexed. |
 | `customer_name` | text | |
 | `customer_phone` | text | |
-| `fulfilment` | text | `collect` \| `local_delivery` |
+| `fulfilment` | text | `collect` \| `local_delivery` — written from the tenant's `fulfilment_mode`, not chosen per order |
+| `delivery_address` | text | nullable. Written only when the tenant is `local_delivery`; a `collect` tenant's checkout has no address field and stores null. **Not `notes`** — a seller scanning a queue must be able to tell "leave it at the gate" from the address itself. |
 | `notes` | text | buyer's note |
 | `status` | text | see flow below |
 | `total` | numeric(10,2) | estimate when `sale_mode = weight` until confirmed |

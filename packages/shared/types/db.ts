@@ -198,6 +198,7 @@ export type Database = {
           created_at: string
           customer_name: string
           customer_phone: string
+          delivery_address: string | null
           fulfilment: Database["public"]["Enums"]["fulfilment_mode"]
           id: string
           notes: string | null
@@ -213,6 +214,7 @@ export type Database = {
           created_at?: string
           customer_name: string
           customer_phone: string
+          delivery_address?: string | null
           fulfilment: Database["public"]["Enums"]["fulfilment_mode"]
           id?: string
           notes?: string | null
@@ -228,6 +230,7 @@ export type Database = {
           created_at?: string
           customer_name?: string
           customer_phone?: string
+          delivery_address?: string | null
           fulfilment?: Database["public"]["Enums"]["fulfilment_mode"]
           id?: string
           notes?: string | null
@@ -384,12 +387,20 @@ export type Database = {
       is_anonymous_user: { Args: never; Returns: boolean }
       is_buyer_order: { Args: { p_order_id: string }; Returns: boolean }
       item_is_active: { Args: { p_item_id: string }; Returns: boolean }
+      next_order_reference: {
+        Args: { p_attempt?: number; p_tenant_id: string }
+        Returns: string
+      }
       order_belongs_to_tenant: {
         Args: { p_order_id: string; p_tenant_id: string }
         Returns: boolean
       }
       order_with_lines: {
         Args: { p_order_id: string; p_tenant_id: string }
+        Returns: Json
+      }
+      place_order: {
+        Args: { p_details?: Json; p_lines: Json; p_tenant_id: string }
         Returns: Json
       }
       save_product: {

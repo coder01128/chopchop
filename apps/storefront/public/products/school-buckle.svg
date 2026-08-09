@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" width="400" height="300" role="img" aria-label="School Buckle">
+  <rect width="400" height="300" fill="#2c2430"/>
+  <rect width="400" height="300" fill="url(#g)"/>
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff" stop-opacity=".06"/>
+      <stop offset="1" stop-color="#000000" stop-opacity=".35"/>
+    </linearGradient>
+  </defs>
+  <path d="M96 178h96l40 22h68a20 20 0 0 1 0 40H96z" fill="#4a3c52"/><rect x="150" y="146" width="86" height="16" rx="8" fill="#4a3c52"/><rect x="182" y="138" width="26" height="32" rx="6" fill="#0f0f0d" fill-opacity=".4"/>
+  <text x="200" y="272" text-anchor="middle" font-family="-apple-system, Segoe UI, Helvetica, Arial, sans-serif" font-size="21" font-weight="600" fill="#e9e6dd">School Buckle</text>
+</svg>

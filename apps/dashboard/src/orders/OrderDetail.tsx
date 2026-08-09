@@ -129,6 +129,14 @@ export function OrderDetail({
               <dt>Fulfilment</dt>
               <dd>{order.fulfilment === 'local_delivery' ? 'Local delivery' : 'Collect'}</dd>
             </div>
+            {/* Only a delivery order has one, and only the storefront collects
+                it — a collect tenant's checkout has no address field at all. */}
+            {order.delivery_address && (
+              <div>
+                <dt>Deliver to</dt>
+                <dd>{order.delivery_address}</dd>
+              </div>
+            )}
             <div>
               <dt>Placed</dt>
               <dd>{describeAge(order.created_at, now)}</dd>
