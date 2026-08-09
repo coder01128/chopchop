@@ -123,37 +123,52 @@ async function place(
  */
 const REFERENCE = /^[23456789ABCDEFGHJKMNPQRSTVWXYZ]{5}$/;
 
+interface DefinerGrants {
+  anon: boolean;
+  authenticated: boolean;
+}
+
 /**
- * The SECURITY DEFINER functions this repo creates on purpose.
+ * Every SECURITY DEFINER function in `public`, and who may execute it.
  *
- * All five break an RLS recursion that cannot be expressed any other way, and
- * each is argued for in the migration that introduced it (0002 and 0005). They
- * are granted to `authenticated` because a policy is evaluated in the caller's
- * context, so the caller needs EXECUTE — which is exactly why a *sixth* one
- * needs an argument made for it rather than being noticed later.
+ * SECURITY DEFINER on its own is ordinary — five of these are definer precisely
+ * so an RLS policy can terminate, and they must stay that way. What made
+ * next_order_reference a leak was the pair: definer (exempt from RLS) *and*
+ * granted to a Data API role (reachable by any storefront visitor), with
+ * arguments the caller chooses. So the grants are asserted, not just the names.
+ *
+ * The five below are argued for in the migrations that introduced them (0002
+ * and 0005). Each is granted to `authenticated` because a policy is evaluated
+ * in the caller's context, so the caller needs EXECUTE; `anon` gets only the
+ * two the public catalogue policies need.
  */
-const OUR_DEFINERS = [
-  'is_active_tenant',
-  'is_buyer_order',
-  'item_is_active',
-  'order_belongs_to_tenant',
-  'user_tenant_ids',
-];
+const EXPECTED_DEFINERS: Record<string, DefinerGrants> = {
+  // Catalogue policies run for both storefront paths — anon before checkout,
+  // authenticated after — so both roles need these two.
+  is_active_tenant: { anon: true, authenticated: true },
+  item_is_active: { anon: true, authenticated: true },
 
-/**
- * Created by the Supabase platform, not by anything in `supabase/migrations`.
- * It takes no arguments, is absent from the generated API types, and is the
- * event-trigger function that enables RLS on newly created public tables —
- * there is nothing tenant-scoped to pass it. Listed separately so it stays
- * obvious which entries are ours to defend.
- */
-const PLATFORM_DEFINERS = ['rls_auto_enable'];
+  // Dashboard and buyer policies only. anon was revoked from
+  // order_belongs_to_tenant in 0005 when the anon-role buyer path was torn out.
+  is_buyer_order: { anon: false, authenticated: true },
+  order_belongs_to_tenant: { anon: false, authenticated: true },
+  user_tenant_ids: { anon: false, authenticated: true },
 
-/**
- * Asserted as a list rather than a blanket "none", because a blanket assertion
- * could never pass while the RLS helpers exist. The guard is the diff.
- */
-const EXPECTED_DEFINERS = [...OUR_DEFINERS, ...PLATFORM_DEFINERS].sort();
+  // NOT OURS, AND NOT ENDORSED.
+  //
+  // Created by the Supabase platform — no migration in this repo defines it. It
+  // is recorded here so this test passes on today's reality, not because the
+  // state is acceptable: both Data API roles hold EXECUTE (it was never revoked
+  // from PUBLIC), and PostgREST routes POST /rest/v1/rpc/rls_auto_enable. That
+  // is the same pair that made next_order_reference a leak, on a function whose
+  // body nobody here has read.
+  //
+  // It was left alone rather than invoked or revoked: it is a platform object,
+  // and calling something named "rls_auto_enable" to find out what it does is
+  // not a test, it is the incident. Raised with Brad 2026-08-09. If it is locked
+  // down, flip these to false and this test confirms the lockdown held.
+  rls_auto_enable: { anon: true, authenticated: true },
+};
 
 async function orderCount(tenantId: string): Promise<number> {
   const { count } = await admin
@@ -450,22 +465,41 @@ describe('place_order', () => {
     ).not.toBeNull();
   });
 
-  it('exposes no SECURITY DEFINER function beyond the documented five', async () => {
+  it('grants Data API execute on a SECURITY DEFINER function only where documented', async () => {
     const { data, error } = await admin
       .from('security_definer_functions')
-      .select('function_name, arguments');
+      .select('function_name, arguments, anon_can_execute, authenticated_can_execute');
 
     expect(error, `could not read the definer list: ${error?.message}`).toBeNull();
 
-    const found = [...new Set((data ?? []).map((row) => row.function_name as string))].sort();
+    const found: Record<string, DefinerGrants> = {};
+    for (const row of data ?? []) {
+      // Overloads share a name and would each need the same answer, so an OR
+      // across them is the honest reading: reachable by that role at all.
+      const name = row.function_name as string;
+      const current = found[name] ?? { anon: false, authenticated: false };
+      found[name] = {
+        anon: current.anon || Boolean(row.anon_can_execute),
+        authenticated: current.authenticated || Boolean(row.authenticated_can_execute),
+      };
+    }
+
+    expect(
+      Object.keys(found).sort(),
+      'The set of SECURITY DEFINER functions changed. Each one runs as the table ' +
+        'owner and is exempt from RLS, so a new one is a hole until argued ' +
+        'otherwise. Add it to EXPECTED_DEFINERS only with that argument written ' +
+        'into its migration.',
+    ).toEqual(Object.keys(EXPECTED_DEFINERS).sort());
+
     expect(
       found,
-      'The set of SECURITY DEFINER functions changed. Each one runs as the table ' +
-        'owner and is exempt from RLS, so a new one is a hole until proven ' +
-        'otherwise — and if it takes a tenant id and is granted to ' +
-        '`authenticated`, every buyer session can call it for every tenant. That ' +
-        'is exactly how next_order_reference leaked order counts. Add it here ' +
-        'only with the argument for it written into its migration.',
+      'Execute privileges on a SECURITY DEFINER function changed. Definer alone ' +
+        'is ordinary — several of these must be. Definer AND callable by anon or ' +
+        'authenticated is the pair that let next_order_reference hand any buyer ' +
+        'session any tenant\'s order count, because a storefront visitor holds ' +
+        'both roles and chooses the arguments. A new `true` here is that pair ' +
+        'forming again.',
     ).toEqual(EXPECTED_DEFINERS);
   });
 

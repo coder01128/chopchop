@@ -378,7 +378,9 @@ export type Database = {
     Views: {
       security_definer_functions: {
         Row: {
+          anon_can_execute: boolean | null
           arguments: string | null
+          authenticated_can_execute: boolean | null
           function_name: string | null
           security_definer: boolean | null
         }
