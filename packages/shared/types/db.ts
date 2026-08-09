@@ -376,7 +376,14 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      security_definer_functions: {
+        Row: {
+          arguments: string | null
+          function_name: string | null
+          security_definer: boolean | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       confirm_order: {
@@ -387,10 +394,6 @@ export type Database = {
       is_anonymous_user: { Args: never; Returns: boolean }
       is_buyer_order: { Args: { p_order_id: string }; Returns: boolean }
       item_is_active: { Args: { p_item_id: string }; Returns: boolean }
-      next_order_reference: {
-        Args: { p_attempt?: number; p_tenant_id: string }
-        Returns: string
-      }
       order_belongs_to_tenant: {
         Args: { p_order_id: string; p_tenant_id: string }
         Returns: boolean

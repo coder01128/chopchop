@@ -118,15 +118,42 @@ async function place(
 }
 
 /**
- * What `next_order_reference` will produce for this tenant's nth order — one
- * letter from the slug's last segment, then a zero-padded count. Derived here
- * rather than read from the function, so the collision test can plant a row in
- * front of it.
+ * The reference alphabet, chosen for a seller reading a code aloud on WhatsApp:
+ * no I or L to be heard as 1, no O to be heard as 0, no U.
  */
-function referenceFor(slug: string, n: number): string {
-  const segment = slug.split('-').filter(Boolean).at(-1) ?? slug;
-  return `${segment[0].toUpperCase()}${String(n).padStart(2, '0')}`;
-}
+const REFERENCE = /^[23456789ABCDEFGHJKMNPQRSTVWXYZ]{5}$/;
+
+/**
+ * The SECURITY DEFINER functions this repo creates on purpose.
+ *
+ * All five break an RLS recursion that cannot be expressed any other way, and
+ * each is argued for in the migration that introduced it (0002 and 0005). They
+ * are granted to `authenticated` because a policy is evaluated in the caller's
+ * context, so the caller needs EXECUTE — which is exactly why a *sixth* one
+ * needs an argument made for it rather than being noticed later.
+ */
+const OUR_DEFINERS = [
+  'is_active_tenant',
+  'is_buyer_order',
+  'item_is_active',
+  'order_belongs_to_tenant',
+  'user_tenant_ids',
+];
+
+/**
+ * Created by the Supabase platform, not by anything in `supabase/migrations`.
+ * It takes no arguments, is absent from the generated API types, and is the
+ * event-trigger function that enables RLS on newly created public tables —
+ * there is nothing tenant-scoped to pass it. Listed separately so it stays
+ * obvious which entries are ours to defend.
+ */
+const PLATFORM_DEFINERS = ['rls_auto_enable'];
+
+/**
+ * Asserted as a list rather than a blanket "none", because a blanket assertion
+ * could never pass while the RLS helpers exist. The guard is the diff.
+ */
+const EXPECTED_DEFINERS = [...OUR_DEFINERS, ...PLATFORM_DEFINERS].sort();
 
 async function orderCount(tenantId: string): Promise<number> {
   const { count } = await admin
@@ -354,45 +381,92 @@ describe('place_order', () => {
     expect(error!.message).toMatch(/not taking orders/i);
   });
 
-  it('generates a unique reference, and survives a collision', async () => {
+  it('generates a unique reference a seller can read aloud', async () => {
     const chops = await variantOf(butcheryId, 'Lamb Chops', { unit: 'per kg' });
+    const references: string[] = [];
 
-    const first = await place(buyer, butcheryId, [{ variant_id: chops.id, qty: 1 }]);
-    expect(first.error, `place failed: ${first.error?.message}`).toBeNull();
-    expect(first.placed!.order.reference, 'No reference was generated.').toBeTruthy();
+    for (let i = 0; i < 4; i += 1) {
+      const { error, placed } = await place(buyer, butcheryId, [{ variant_id: chops.id, qty: 1 }]);
+      expect(error, `place failed: ${error?.message}`).toBeNull();
+      references.push(placed!.order.reference);
+    }
 
-    // Plant the reference the next call is about to pick. Counting this order
-    // in, the next candidate is count + 1 — so the row that blocks it is the
-    // one two ahead of the current count.
-    const count = await orderCount(butcheryId);
-    const blocked = referenceFor(DEMO_USERS.butchery.slug, count + 2);
-    const { data: blocker, error: blockerError } = await admin
+    for (const reference of references) {
+      expect(
+        reference,
+        `"${reference}" is not a five-character code from the spoken-safe alphabet. ` +
+          'The seller reads this out on WhatsApp while serving somebody else.',
+      ).toMatch(REFERENCE);
+      expect(
+        reference,
+        `"${reference}" contains a character that is misheard: I and L sound like 1, ` +
+          'O like 0.',
+      ).not.toMatch(/[ILOU01]/);
+    }
+
+    expect(
+      new Set(references).size,
+      'Two orders in the same shop got the same reference. (tenant_id, reference) ' +
+        'is unique, so this should have been impossible.',
+    ).toBe(references.length);
+
+    // Drawn, not counted. The scheme this replaced put a tenant's order number
+    // in the digits, and consecutive orders read as consecutive codes.
+    expect(
+      references.every((reference) => /^[A-Z]\d+$/.test(reference)),
+      'The references look like a letter followed by a running number. That ' +
+        'shape told a buyer how many orders the shop had taken.',
+    ).toBe(false);
+  });
+
+  it('coexists with the references already in the seed', async () => {
+    // Uniqueness is per tenant, so A47 and the Q4- fixtures keep their
+    // identities forever. Nothing renumbers when the format changes.
+    const { data: seeded } = await admin
       .from('orders')
-      .insert({
-        tenant_id: butcheryId,
-        reference: blocked,
-        customer_name: 'Reference Collision',
-        customer_phone: '27820000000',
-        fulfilment: 'collect',
-        total: 0,
-      })
-      .select()
-      .single();
-    expect(blockerError, `could not plant the collision: ${blockerError?.message}`).toBeNull();
-    createdOrderIds.push(blocker!.id);
+      .select('reference')
+      .eq('tenant_id', butcheryId)
+      .eq('reference', 'A47');
+    expect(
+      seeded ?? [],
+      'A seeded reference was renumbered. An order\'s reference is its identity ' +
+        'in a WhatsApp thread — it cannot change under the seller.',
+    ).toHaveLength(1);
+  });
 
-    const second = await place(buyer, butcheryId, [{ variant_id: chops.id, qty: 1 }]);
+  it('no longer exposes a reference generator to buyers', async () => {
+    // The counter was SECURITY DEFINER, and place_order is SECURITY INVOKER, so
+    // it had to be granted to `authenticated` — the role every buyer session
+    // holds. Any visitor could pass any tenant id and read that shop's order
+    // count back out of the digits.
+    const { error } = await buyer.rpc(
+      'next_order_reference' as never,
+      { p_tenant_id: shoesId } as never,
+    );
     expect(
-      second.error,
-      'A reference collision was fatal. (tenant_id, reference) is unique and two ' +
-        'buyers can check out in the same second — the retry has to hold.',
-    ).toBeNull();
+      error,
+      'next_order_reference is still callable. A buyer session can read any ' +
+        'tenant\'s order count — that is a client\'s trading volume.',
+    ).not.toBeNull();
+  });
+
+  it('exposes no SECURITY DEFINER function beyond the documented five', async () => {
+    const { data, error } = await admin
+      .from('security_definer_functions')
+      .select('function_name, arguments');
+
+    expect(error, `could not read the definer list: ${error?.message}`).toBeNull();
+
+    const found = [...new Set((data ?? []).map((row) => row.function_name as string))].sort();
     expect(
-      second.placed!.order.reference,
-      'The colliding reference was reused, which the unique index should have ' +
-        'made impossible.',
-    ).not.toBe(blocked);
-    expect(second.placed!.order.reference).not.toBe(first.placed!.order.reference);
+      found,
+      'The set of SECURITY DEFINER functions changed. Each one runs as the table ' +
+        'owner and is exempt from RLS, so a new one is a hole until proven ' +
+        'otherwise — and if it takes a tenant id and is granted to ' +
+        '`authenticated`, every buyer session can call it for every tenant. That ' +
+        'is exactly how next_order_reference leaked order counts. Add it here ' +
+        'only with the argument for it written into its migration.',
+    ).toEqual(EXPECTED_DEFINERS);
   });
 
   it('refuses a part quantity on a unit tenant', async () => {
