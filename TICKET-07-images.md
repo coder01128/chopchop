@@ -28,6 +28,15 @@ anything contradicts this ticket.
 5. **Whether the seeded SVGs are still needed** once uploads exist, or whether
    they become dead weight in the repo. Report; do not delete anything.
 
+   **Amended after the pre-check ran.** This item was written assuming one copy
+   of the SVGs. There are two: `apps/storefront/public/products/` and
+   `apps/dashboard/public/products/`, ten identical files in each. Both are
+   load-bearing, because `items.image_url` holds root-relative paths
+   (`/products/rump.svg`) which resolve against whichever app's origin is
+   serving. Deleting the dashboard copy leaves every seeded product showing
+   "No photo" in the seller's own catalogue. **Neither directory is touched by
+   this ticket.**
+
 ---
 
 ## Why per-variant, and why a library
@@ -111,6 +120,11 @@ the seed data in this ticket.
   the selected variant has an assigned image, the sheet shows that image.
 - When it does not, the sheet falls back to the primary. A missing image never
   renders a broken tile.
+- **`ProductSheet` has no fallback and no `onError` handler at all today** — it
+  renders the image only when a URL is present, and a URL that fails to load
+  leaves a broken `<img>` in the sheet. The catalogue tile, the dashboard grid
+  and the modal preview all handle both cases; the sheet handles neither. This
+  ticket **adds** that behaviour to the sheet, it does not extend it.
 - Order snapshots are unaffected. `order_items` carries no image and gains none —
   a photo changing later must not alter what a buyer sees on a past order, and
   the cheapest way to guarantee that is to keep images out of the snapshot
@@ -162,10 +176,25 @@ Extend the existing suite; do not start a new pattern.
 Leak test additions:
 
 - a seller cannot write an object under another tenant's prefix
-- a seller cannot read another tenant's objects
+- ~~a seller cannot read another tenant's objects~~ — **amended after the
+  policies were built and run.** Not achievable with the public bucket that was
+  chosen, and the test was changed rather than left asserting something
+  comfortable and false. Supabase serves a public bucket's object **without
+  consulting RLS on either endpoint**, so anyone holding an exact path can fetch
+  that one file — including through `download()` on an authenticated client. The
+  read that is enforced, and the one worth enforcing, is **enumeration**: a
+  seller cannot `list()` another tenant's prefix, so no path can be discovered.
+  An object name is a uuid, and the only places a path exists are the storefront
+  that already renders it publicly and the owner's own dashboard. Asserted both
+  ways: the listing is empty, and the public URL serving 200 is its own test so
+  that reversing the trade is a decision rather than a regression.
 - a seller cannot delete another tenant's objects
+- a seller cannot overwrite another tenant's object
 - `anon` cannot write to the bucket at all
 - a buyer session cannot write to the bucket at all
+- a buyer session cannot enumerate the bucket
+- a seller **can** read, write and delete under their own prefix — without this
+  every assertion above also passes against a bucket that refuses everybody
 
 Report the new total against the current 216 and confirm `skipped 0`.
 

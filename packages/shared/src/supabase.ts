@@ -14,6 +14,20 @@ export type ChopChopClient = SupabaseClient<Database>;
 
 let client: ChopChopClient | undefined;
 
+/**
+ * The project URL on its own.
+ *
+ * Image paths are stored, not URLs, so both apps derive a public URL at render
+ * time — a project ref change must not invalidate every row. `publicImageUrl`
+ * is pure and takes the base as an argument so it stays testable; this is where
+ * components get that argument.
+ */
+export function getSupabaseUrl(): string {
+  const url = import.meta.env.VITE_SUPABASE_URL;
+  if (!url) throw new Error('Missing VITE_SUPABASE_URL.');
+  return url;
+}
+
 export function getSupabaseClient(): ChopChopClient {
   if (client) return client;
 

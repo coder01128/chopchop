@@ -80,6 +80,13 @@ export interface StorefrontVariant {
   price: number;
   stock: number;
   available: boolean;
+  /**
+   * The photo assigned to this variant, as a Storage object path, or null to
+   * use the product's. Resolution is not done here — `resolveImageSource` in
+   * shared answers it for both apps, so the seller's dashboard and the buyer's
+   * sheet cannot show different pictures.
+   */
+  imagePath: string | null;
 }
 
 /**

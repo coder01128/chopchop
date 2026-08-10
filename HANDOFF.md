@@ -3,7 +3,7 @@
 Context for picking this up cold in a new session. `CLAUDE.md` is the rules for
 the build agent; `SCHEMA.md` is the database contract. **This file is the why.**
 
-Last updated: 10 Aug 2026, after ticket 06 spreadsheet import.
+Last updated: 10 Aug 2026, after ticket 07 product images.
 
 ---
 
@@ -123,13 +123,33 @@ Built, not yet committed at the time of writing:
   butchery catalogue 12 → 15 with no duplicates and left the omitted product
   untouched.
 
-Remaining to v1: **06B vision import**, product images (see open questions),
-then deployment/domains and an onboarding runbook. Metrics deliberately
-unscheduled until a client has traded.
+- **07** — product images. One Storage bucket, `product-images`: public read,
+  writes scoped to the seller's own prefix. Objects at
+  `<tenant_id>/<item_id>/<uuid>.<ext>`, and the bucket policies derive tenant
+  access from `user_tenant_ids()` — the same helper every table policy uses, not
+  a second source of truth. `image_path` on both `items` and `variants`;
+  `items.image_url` becomes legacy and read-only, which is how the seeded SVGs
+  keep rendering with no data migration. Resolution is one function in
+  `packages/shared/src/image-model.ts` — variant path, product primary, legacy
+  url, empty — imported by both apps, so the seller's dashboard and the buyer's
+  sheet cannot disagree about which photo a variant shows. **The library is not
+  a table**: a product's images are the objects under its prefix, so a row and
+  an object can never disagree about what exists. The upload control resizes
+  client-side to 1600px / JPEG 0.82 (a 4 MB phone shot lands 250–400 KB),
+  reports progress over XHR because fetch cannot, and offers the camera below
+  the 48rem breakpoint. `save_product` carries image paths, refuses one outside
+  the caller's tenant prefix, and treats an **absent** key as unchanged against
+  a **present-but-empty** key as cleared — which is what stops a spreadsheet
+  re-import stripping a seller's photographs. A product being created mints its
+  own id (`new_id`), because the object path contains the item id and a photo
+  may be taken before the first save.
 
-Test count: 216 across 8 files — tenant-leak, save-product-rpc,
+Remaining to v1: **06B vision import**, then deployment/domains and an
+onboarding runbook. Metrics deliberately unscheduled until a client has traded.
+
+Test count: 255 across 9 files — tenant-leak, save-product-rpc,
 confirm-order-rpc, place-order-rpc, variant-model, order-model,
-storefront-model, import-model.
+storefront-model, import-model, image-model.
 
 Repo: `C:\ccode\git-repos\chopchop`, GitHub `coder01128/chopchop` (private —
 Claude cannot read it; the GitHub connector has been failing). Docs in the root:
@@ -168,6 +188,38 @@ slow tests by default, so use `--reporter=verbose` to see names.
 **Anonymous users accumulate**, one per order, forever. Nothing cleans them up.
 Not urgent — no real orders — but it's on the list.
 
+**Storage objects accumulate too — the second unbounded thing.** A product's
+image library *is* the set of objects under `<tenant_id>/<item_id>/` in the
+`product-images` bucket; nothing tracks them in a table. So a delete that
+happens anywhere other than the library's own delete control leaves the file
+behind: removing a variant does not delete the photograph it pointed at (right
+— the same file may be carrying two other sizes), and deleting a *product* drops
+its rows by cascade while its whole folder stays in Storage with nothing left
+pointing at it. Nothing reaps them. Not urgent — no real clients, and objects
+are ~300 KB after the client-side resize — but it is unbounded and it now sits
+alongside the anonymous users. The fix when it matters is a scheduled sweep
+comparing bucket prefixes against live `items.id`, not a tracking table, which
+would reintroduce the row-and-object disagreement the model avoids.
+
+**"The surface is public, so grant it to `anon`" has now bitten twice.** Both
+times the reasoning was true and the grant was still wrong, because the grant
+did not govern the surface it was justified by.
+
+- The `SECURITY DEFINER` reference helper: a sequential order reference is
+  harmless to a buyer, but the function that produced it could be called
+  directly, and it read a client's order count.
+- The Storage SELECT policy on `product-images`: photographs are public, and a
+  public bucket serves `/object/public/…` **without consulting RLS at all**. So
+  the policy was never what made images render — the only call it governed was
+  `list()`, which is the enumeration primitive. It shipped read on every
+  tenant's objects to anyone holding the publishable key, in exchange for
+  nothing.
+
+Before granting anything to `anon` or `authenticated`: name the exact call that
+needs it, and check whether the path you are trying to enable consults RLS in
+the first place. If it does not, the grant is buying you a different capability
+from the one you are thinking about.
+
 **`SECURITY DEFINER` plus a grant to a Data API role is the shape of the bug that
 has bitten once.** Five policy helpers are definer by necessity, since a policy
 is evaluated in the caller's context: `user_tenant_ids`, `is_active_tenant`,
@@ -200,12 +252,15 @@ Don't claim to have done something and then not run the tool.
 
 ## Live open questions
 
-- **Product images are URL-only, and that blocks deployment.** The edit modal
-  has an IMAGE URL text field, there is no Storage bucket on the project, and
-  there is no upload control anywhere. A seller with photos on their phone
-  cannot produce a URL, so a handover today ships a storefront the client
-  cannot put pictures in. Needs its own ticket: bucket, bucket RLS, and a
-  tap-to-add / open-camera control on mobile.
+- **The upload control has never been exercised on a real phone.** Ticket 07
+  built it and it was verified in a desktop browser, including a synthesised
+  camera-sized image through the real file input, the resize, the upload, the
+  assignment and the storefront swap. What is unverified is the thing the
+  control exists for: a seller tapping **Take photo** on an actual handset,
+  where `capture="environment"` is what opens the camera rather than the
+  gallery. One tap-through on a deployed URL before a client sees it, on Android
+  and on iOS — some iOS Safari versions ignore `capture` and fall back to the
+  picker, which is degraded but not broken.
 - **The native OS file picker is confirmed by hand on desktop only.** Mobile is
   unverified, and on a phone that dialog is the path to Drive, Dropbox and
   anything saved out of a WhatsApp chat. One tap-through on a deployed URL

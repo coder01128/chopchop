@@ -1,0 +1,222 @@
+.wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.label {
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.progressText {
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  color: var(--accent);
+}
+
+.progressTrack {
+  height: 3px;
+  background: var(--fill);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.progressBar {
+  height: 100%;
+  background: var(--accent);
+  transition: width 120ms linear;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(6.5rem, 1fr));
+  gap: 0.5rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.tile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 0.25rem;
+  background: var(--bg);
+}
+
+.tile[data-primary] {
+  border-color: var(--accent);
+}
+
+/* A deleted or unreachable object leaves the tile as a neutral block, never a
+   broken image icon. The same rule the catalogue and the storefront follow. */
+.tile[data-broken] .thumb {
+  display: none;
+}
+
+.tile[data-broken]::before {
+  content: 'Missing';
+  display: grid;
+  place-items: center;
+  aspect-ratio: 1;
+  font-family: var(--mono);
+  font-size: 0.65rem;
+  color: var(--muted);
+  background: var(--fill);
+  border-radius: var(--radius);
+}
+
+.thumb {
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  border-radius: var(--radius);
+  background: var(--fill);
+}
+
+.tileActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+
+.tileButton {
+  flex: 1 1 auto;
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  color: var(--ink);
+  font-family: var(--mono);
+  font-size: 0.65rem;
+  padding: 0.25rem 0.35rem;
+  cursor: pointer;
+}
+
+.tileButton:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.tileButton[data-tone='danger']:hover:not(:disabled) {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+.tileButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.primaryFlag {
+  flex: 1 1 auto;
+  text-align: center;
+  font-family: var(--mono);
+  font-size: 0.65rem;
+  color: var(--accent);
+  padding: 0.25rem 0.35rem;
+}
+
+.assign {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  margin: 0.25rem 0 0;
+  padding: 0.4rem 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  background: var(--panel2);
+}
+
+.assign legend {
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  padding: 0 0.25rem;
+}
+
+.assignRow {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.8rem;
+  color: var(--ink);
+}
+
+.addTile {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.35rem;
+  min-height: 6.5rem;
+  border: 1px dashed var(--line);
+  border-radius: var(--radius);
+  padding: 0.5rem;
+}
+
+.addButton,
+.cameraButton {
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  color: var(--ink);
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  padding: 0.4rem 0.35rem;
+  cursor: pointer;
+}
+
+.addButton:hover:not(:disabled),
+.cameraButton:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.addButton:disabled,
+.cameraButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* The camera control exists for a seller standing in their shop with a phone.
+   Above the phone breakpoint it would open a laptop webcam pointed at nobody's
+   stock, so it is not offered there. */
+@media (min-width: 48rem) {
+  .cameraButton {
+    display: none;
+  }
+}
+
+.hiddenInput {
+  display: none;
+}
+
+.note {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.failure {
+  margin: 0;
+  border: 1px solid var(--danger);
+  border-radius: var(--radius);
+  padding: 0.4rem 0.5rem;
+  font-size: 0.8rem;
+  color: var(--danger);
+}

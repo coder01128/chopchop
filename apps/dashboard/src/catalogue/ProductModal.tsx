@@ -25,16 +25,28 @@ import {
   type VariantRecord,
 } from './variant-model';
 import { VariantEditor } from './VariantEditor';
+import { ImageLibrary } from './ImageLibrary';
 import styles from './ProductModal.module.css';
 
-const EMPTY_DRAFT: ItemDraft = {
-  id: null,
-  name: '',
-  description: '',
-  imageUrl: '',
-  categoryId: null,
-  active: true,
-};
+/**
+ * A product being created gets its id here rather than from the database.
+ *
+ * The Storage object path is <tenant_id>/<item_id>/<uuid>.<ext>, so a photo
+ * taken before the first save needs an item id to sit under. save_product
+ * inserts with this id, and refuses it if it is already in use.
+ */
+function emptyDraft(): ItemDraft {
+  return {
+    id: null,
+    newId: crypto.randomUUID(),
+    name: '',
+    description: '',
+    imageUrl: '',
+    imagePath: '',
+    categoryId: null,
+    active: true,
+  };
+}
 
 interface Removal {
   id: string;
@@ -64,7 +76,7 @@ export function ProductModal({
   const client = getSupabaseClient();
   const dialogRef = useRef<HTMLDivElement>(null);
 
-  const [draft, setDraft] = useState<ItemDraft>(EMPTY_DRAFT);
+  const [draft, setDraft] = useState<ItemDraft>(emptyDraft);
   const [shape, setShape] = useState<ProductShape>({ names: [], values: {} });
   const [store, setStore] = useState<CellStore>({});
   const [original, setOriginal] = useState<CellStore>({});
@@ -83,7 +95,7 @@ export function ProductModal({
       setFailure(null);
 
       if (!item) {
-        setDraft(EMPTY_DRAFT);
+        setDraft(emptyDraft());
         setShape({ names: [], values: {} });
         setStore({});
         setOriginal({});
@@ -94,9 +106,11 @@ export function ProductModal({
 
       setDraft({
         id: item.id,
+        newId: item.id,
         name: item.name,
         description: item.description ?? '',
         imageUrl: item.image_url ?? '',
+        imagePath: item.image_path ?? '',
         categoryId: item.category_id,
         active: item.active,
       });
@@ -279,6 +293,43 @@ export function ProductModal({
               </div>
 
               <div className={styles.rightColumn}>
+                <ImageLibrary
+                  tenantId={tenant.id}
+                  itemId={draft.id ?? draft.newId}
+                  primaryPath={draft.imagePath}
+                  onPrimaryChange={(path) => setDraft((current) => ({ ...current, imagePath: path }))}
+                  cells={cells}
+                  shape={shape}
+                  onAssign={(path, variantKeys) => {
+                    // Per-image assignment, applied to the cell store: the keys
+                    // given are the ones that end up carrying this photo, and
+                    // any other cell pointing at it is cleared.
+                    const wanted = new Set(variantKeys);
+                    setStore((current) => {
+                      const next: CellStore = {};
+                      for (const [key, cell] of Object.entries(current)) {
+                        next[key] = wanted.has(key)
+                          ? { ...cell, imagePath: path }
+                          : cell.imagePath === path
+                            ? { ...cell, imagePath: null }
+                            : cell;
+                      }
+                      // A combination with no saved row yet is not in the store
+                      // until it is edited, so add the ones just assigned.
+                      for (const cell of cells) {
+                        if (wanted.has(cell.key) && !next[cell.key]) {
+                          next[cell.key] = { ...cell, imagePath: path };
+                        }
+                      }
+                      return next;
+                    });
+                  }}
+                  disabled={saving}
+                />
+
+                {/* Legacy. The seeded SVG paths live here and still render;
+                    nothing writes this field from the upload control, and the
+                    photos above take precedence over it. */}
                 <label className={styles.field}>
                   <span>Image URL</span>
                   <input
@@ -288,15 +339,6 @@ export function ProductModal({
                     onChange={(event) => setDraft({ ...draft, imageUrl: event.target.value })}
                   />
                 </label>
-                {/* Optional, and it stays optional — most clients upload photos
-                    late or never. */}
-                <div className={styles.preview} data-empty={draft.imageUrl.trim() ? undefined : true}>
-                  {draft.imageUrl.trim() ? (
-                    <img src={draft.imageUrl} alt="" onError={(event) => event.currentTarget.remove()} />
-                  ) : (
-                    <span>No photo</span>
-                  )}
-                </div>
                 <label className={styles.toggle}>
                   <input
                     type="checkbox"

@@ -1,3 +1,4 @@
+import { getSupabaseUrl, resolveImageUrl } from '@chopchop/shared';
 import type { ItemSummary } from './catalogue-data';
 import styles from './ItemGrid.module.css';
 
@@ -59,22 +60,7 @@ export function ItemGrid({
             <button type="button" className={styles.cardOpen} onClick={() => onEdit(summary)}>
               {/* A missing photo is a neutral block, never a broken image —
                   most clients upload photos late or never. */}
-              <span className={styles.thumb} data-empty={summary.item.image_url ? undefined : true}>
-                {summary.item.image_url ? (
-                  <img
-                    src={summary.item.image_url}
-                    alt=""
-                    loading="lazy"
-                    onError={(event) => {
-                      const holder = event.currentTarget.parentElement;
-                      if (holder) holder.dataset.empty = 'true';
-                      event.currentTarget.remove();
-                    }}
-                  />
-                ) : (
-                  <span className={styles.thumbMark}>No photo</span>
-                )}
-              </span>
+              <Thumb summary={summary} />
 
               <span className={styles.cardBody}>
                 <span className={styles.name}>{summary.item.name}</span>
@@ -107,5 +93,39 @@ export function ItemGrid({
         </li>
       ))}
     </ul>
+  );
+}
+
+/**
+ * The card photo.
+ *
+ * Resolved through the shared model — uploaded primary first, then the legacy
+ * image_url that still carries the seeded SVGs, then the neutral block. The
+ * storefront asks the same function the same question, so a seller never sees a
+ * different picture from their buyer.
+ */
+function Thumb({ summary }: { summary: ItemSummary }) {
+  const src = resolveImageUrl(getSupabaseUrl(), {
+    imagePath: summary.item.image_path,
+    imageUrl: summary.item.image_url,
+  });
+
+  return (
+    <span className={styles.thumb} data-empty={src ? undefined : true}>
+      {src ? (
+        <img
+          src={src}
+          alt=""
+          loading="lazy"
+          onError={(event) => {
+            const holder = event.currentTarget.parentElement;
+            if (holder) holder.dataset.empty = 'true';
+            event.currentTarget.remove();
+          }}
+        />
+      ) : (
+        <span className={styles.thumbMark}>No photo</span>
+      )}
+    </span>
   );
 }

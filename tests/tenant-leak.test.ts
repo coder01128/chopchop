@@ -1247,3 +1247,197 @@ describe('buyer sessions (anonymous auth users)', () => {
     await admin.from('orders').update({ status: 'sent' }).eq('id', orderA);
   }, 30_000);
 });
+
+// ===========================================================================
+// Storage — the product-images bucket
+//
+// A seller writing into another tenant's folder is the same class of failure as
+// a cross-tenant row read, so it gets the same treatment here.
+//
+// Storage is a separate service from PostgREST: these go through the storage
+// client on a real seller session, not through a table query. The trap that
+// shapes every assertion below is that **a denied read or delete comes back as
+// an empty array with no error** — Storage does not distinguish "not yours"
+// from "not there". Asserting on `error !== null` would pass against a bucket
+// with no policies at all. So denial is asserted against service-key truth: the
+// foreign object is still there afterwards.
+//
+// One read is deliberately NOT denied: the bucket carries `public = true`, so
+// GET /object/public/<bucket>/<path> serves without consulting RLS. That is the
+// storefront's path and it is a decision, not a gap — object names are uuids,
+// so a path is not guessable. It is asserted at the bottom so it stays a
+// decision somebody made rather than something that drifted.
+// ===========================================================================
+
+describe('Storage — product-images', () => {
+  const BUCKET = 'product-images';
+  const created: string[] = [];
+
+  let shoesObject: string;
+  let butcheryObject: string;
+
+  /** A one-pixel payload. What matters is the path, not the picture. */
+  function photo(): Blob {
+    return new Blob([new Uint8Array([0xff, 0xd8, 0xff, 0xd9])], { type: 'image/jpeg' });
+  }
+
+  async function seed(tenantId: string): Promise<string> {
+    const path = `${tenantId}/${crypto.randomUUID()}/${crypto.randomUUID()}.jpg`;
+    const { error } = await admin.storage
+      .from(BUCKET)
+      .upload(path, photo(), { contentType: 'image/jpeg' });
+    if (error) throw new Error(`Could not seed a Storage fixture: ${error.message}`);
+    created.push(path);
+    return path;
+  }
+
+  /** Service-key truth. The only thing that actually proves an object exists. */
+  async function existsForAdmin(path: string): Promise<boolean> {
+    const folder = path.split('/').slice(0, -1).join('/');
+    const name = path.split('/').pop()!;
+    const { data } = await admin.storage.from(BUCKET).list(folder);
+    return (data ?? []).some((object) => object.name === name);
+  }
+
+  beforeAll(async () => {
+    shoesObject = await seed(shoesId);
+    butcheryObject = await seed(butcheryId);
+  });
+
+  afterAll(async () => {
+    if (created.length > 0) await admin.storage.from(BUCKET).remove(created);
+  });
+
+  it("a seller cannot write an object under another tenant's prefix", async () => {
+    const path = `${shoesId}/${crypto.randomUUID()}/${crypto.randomUUID()}.jpg`;
+    const { error } = await butcheryClient.storage
+      .from(BUCKET)
+      .upload(path, photo(), { contentType: 'image/jpeg' });
+
+    expect(error, `demo-butchery wrote an object into demo-shoes: ${path}`).not.toBeNull();
+
+    // An error is not proof nothing was written.
+    if (await existsForAdmin(path)) {
+      created.push(path);
+      throw new Error(`The object exists despite the error: ${path}`);
+    }
+  });
+
+  it("a seller cannot enumerate another tenant's objects", async () => {
+    const folder = shoesObject.split('/').slice(0, -1).join('/');
+
+    const { data: listed } = await butcheryClient.storage.from(BUCKET).list(folder);
+    expect(
+      listed ?? [],
+      'demo-butchery can list demo-shoes objects — the SELECT policy is not tenant-scoped.',
+    ).toEqual([]);
+
+    // The object is genuinely there. Without this the assertion above passes
+    // against an empty bucket and proves nothing.
+    expect(
+      await existsForAdmin(shoesObject),
+      'the fixture object is missing, so the listing assertion proved nothing',
+    ).toBe(true);
+
+    // Note what this does NOT claim. The bucket is public, and Storage serves
+    // a public bucket's object without consulting RLS on either endpoint — so
+    // demo-butchery holding the exact path CAN fetch that one file, and so can
+    // anybody else. That is the recorded trade, asserted at the bottom of this
+    // block. What is enforced, and what is worth enforcing, is that no path can
+    // be discovered: the listing above is the only way to find one, and it is
+    // empty for everyone but the owner.
+  });
+
+  it("a seller cannot delete another tenant's objects", async () => {
+    // Storage answers this with an empty array and no error. The delete either
+    // happened or it did not, and only the service key can say which.
+    await butcheryClient.storage.from(BUCKET).remove([shoesObject]);
+
+    expect(await existsForAdmin(shoesObject), 'demo-butchery deleted a demo-shoes object.').toBe(
+      true,
+    );
+  });
+
+  it("a seller cannot overwrite another tenant's object", async () => {
+    const { error } = await butcheryClient.storage
+      .from(BUCKET)
+      .upload(shoesObject, photo(), { contentType: 'image/jpeg', upsert: true });
+
+    expect(error, 'demo-butchery overwrote a demo-shoes object.').not.toBeNull();
+  });
+
+  it('anon cannot write to the bucket at all', async () => {
+    const path = `${butcheryId}/${crypto.randomUUID()}/${crypto.randomUUID()}.jpg`;
+    const { error } = await anonClient()
+      .storage.from(BUCKET)
+      .upload(path, photo(), { contentType: 'image/jpeg' });
+
+    expect(error, 'the anon role wrote an object into the bucket.').not.toBeNull();
+    expect(await existsForAdmin(path), 'an anon-written object exists.').toBe(false);
+  });
+
+  it('a buyer session cannot write to the bucket at all', async () => {
+    const buyer = anonClient();
+    const { error: signInError } = await buyer.auth.signInAnonymously();
+    if (signInError) throw new Error(`Anonymous sign-in failed: ${signInError.message}`);
+
+    // A buyer holds the `authenticated` role, which is exactly why the write
+    // policies carry a restrictive not-anonymous gate on top of the tenant one.
+    const path = `${butcheryId}/${crypto.randomUUID()}/${crypto.randomUUID()}.jpg`;
+    const { error } = await buyer.storage
+      .from(BUCKET)
+      .upload(path, photo(), { contentType: 'image/jpeg' });
+
+    expect(error, 'a buyer session wrote an object into the bucket.').not.toBeNull();
+    expect(await existsForAdmin(path), 'a buyer-written object exists.').toBe(false);
+
+    await buyer.auth.signOut();
+  });
+
+  it('a buyer session cannot enumerate the bucket', async () => {
+    const buyer = anonClient();
+    const { error: signInError } = await buyer.auth.signInAnonymously();
+    if (signInError) throw new Error(`Anonymous sign-in failed: ${signInError.message}`);
+
+    const folder = butcheryObject.split('/').slice(0, -1).join('/');
+    const { data } = await buyer.storage.from(BUCKET).list(folder);
+    expect(data ?? [], 'a buyer session can list objects in the bucket.').toEqual([]);
+
+    await buyer.auth.signOut();
+  });
+
+  it('a seller can read, write and delete under their own prefix', async () => {
+    // Without this the assertions above would also pass against a bucket that
+    // refuses everybody, which would be a broken product rather than a secure
+    // one.
+    const path = `${butcheryId}/${crypto.randomUUID()}/${crypto.randomUUID()}.jpg`;
+
+    const { error: writeError } = await butcheryClient.storage
+      .from(BUCKET)
+      .upload(path, photo(), { contentType: 'image/jpeg' });
+    expect(writeError, `a seller could not write their own photo: ${writeError?.message}`).toBeNull();
+    created.push(path);
+
+    const folder = path.split('/').slice(0, -1).join('/');
+    const { data: listed } = await butcheryClient.storage.from(BUCKET).list(folder);
+    expect((listed ?? []).length, 'a seller cannot list their own library.').toBe(1);
+
+    const { error: deleteError } = await butcheryClient.storage.from(BUCKET).remove([path]);
+    expect(deleteError, 'a seller could not delete their own photo.').toBeNull();
+    expect(await existsForAdmin(path), 'the delete reported success but the object remains.').toBe(
+      false,
+    );
+  });
+
+  it('an object is fetchable by exact public URL — deliberately', async () => {
+    // The bucket is public so the storefront can render without signing every
+    // tile. This is the trade recorded in SCHEMA.md, asserted so that changing
+    // it is a decision rather than an accident: one path, one file, and no way
+    // to discover a path you were not given.
+    const response = await fetch(`${url}/storage/v1/object/public/${BUCKET}/${butcheryObject}`);
+    expect(
+      response.status,
+      'a public object URL did not serve — the storefront cannot render.',
+    ).toBe(200);
+  });
+});

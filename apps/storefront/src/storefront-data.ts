@@ -20,6 +20,9 @@ export interface StorefrontItem {
   id: string;
   name: string;
   description: string | null;
+  /** Storage object path of the primary photo. */
+  imagePath: string | null;
+  /** Legacy free-text field — still carries the seeded SVG paths. */
   imageUrl: string | null;
   categoryId: string | null;
   variants: StorefrontVariant[];
@@ -51,13 +54,13 @@ export async function loadCatalogue(
       .order('name'),
     client
       .from('items')
-      .select('id, name, description, image_url, category_id')
+      .select('id, name, description, image_url, image_path, category_id')
       .eq('tenant_id', tenantId)
       .order('sort_order')
       .order('name'),
     client
       .from('variants')
-      .select('id, item_id, attributes, price, stock, available')
+      .select('id, item_id, attributes, price, stock, available, image_path')
       .eq('tenant_id', tenantId),
   ]);
 
@@ -75,6 +78,7 @@ export async function loadCatalogue(
       price: Number(row.price),
       stock: Number(row.stock),
       available: row.available,
+      imagePath: row.image_path,
     });
     byItem.set(row.item_id, list);
   }
@@ -86,6 +90,7 @@ export async function loadCatalogue(
         id: item.id,
         name: item.name,
         description: item.description,
+        imagePath: item.image_path,
         imageUrl: item.image_url,
         categoryId: item.category_id,
         variants: byItem.get(item.id) ?? [],

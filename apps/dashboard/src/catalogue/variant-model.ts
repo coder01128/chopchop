@@ -31,6 +31,12 @@ export interface VariantRecord {
    * which is the everyday in-stock toggle.
    */
   retiredAt: string | null;
+  /**
+   * Storage object path of the photo assigned to this variant, or null to use
+   * the product's primary. Several variants may carry the same path — one
+   * photograph of a white sneaker covers sizes 7, 8 and 9.
+   */
+  imagePath: string | null;
 }
 
 /** Retired variants are not part of the product's live shape. */
@@ -58,6 +64,12 @@ export interface Cell {
   sku: string;
   /** New since the product was opened: renders empty and flagged, blocks save. */
   isNew: boolean;
+  /**
+   * The photo assigned to this variant, as a Storage object path. Assigned from
+   * the image library — the control is per-image, "which variants use this
+   * photo", because that is the direction where one upload covers three sizes.
+   */
+  imagePath: string | null;
 }
 
 export interface ProductShape {
@@ -157,6 +169,7 @@ function emptyCell(attributes: Record<string, string>): Cell {
     available: true,
     sku: '',
     isNew: true,
+    imagePath: null,
   };
 }
 
@@ -170,6 +183,7 @@ export function cellFromVariant(variant: VariantRecord): Cell {
     available: variant.available,
     sku: variant.sku ?? '',
     isNew: false,
+    imagePath: variant.imagePath,
   };
 }
 

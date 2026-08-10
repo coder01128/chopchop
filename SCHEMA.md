@@ -123,7 +123,8 @@ The product. Carries no price and no stock — those live on variants.
 | `category_id` | uuid FK → categories | nullable |
 | `name` | text | |
 | `description` | text | |
-| `image_url` | text | nullable — cards must render without one |
+| `image_path` | text | nullable — Storage object path of the product's **primary** image, e.g. `<tenant_id>/<item_id>/<uuid>.jpg`. Not a URL. See Product images. |
+| `image_url` | text | nullable — **legacy, read-only.** Written by the seed and by hand before Storage existed; nothing writes it again. Cards must render without one. |
 | `active` | bool | hidden from storefront when false |
 | `sort_order` | int | |
 | `created_at` | timestamptz | |
@@ -145,6 +146,7 @@ one jsonb column for everything that differs by vertical.
 | `stock` | numeric(10,3) | decimal so weight works; ignored when `stock_mode = availability` |
 | `available` | bool | the in-stock toggle; the only stock signal when `stock_mode = availability` |
 | `retired_at` | timestamptz | nullable — set when a seller removed this variant but it could not be deleted (see below). Buyers never see a retired variant. |
+| `image_path` | text | nullable — Storage object path of the photo assigned to this variant. Several variants may carry the **same** path: one photograph of a white sneaker covers sizes 7, 8 and 9. Null means "use the product's". See Product images. |
 
 **`retired_at` is not `available = false`.** `available` is the everyday
 in-stock toggle, flipped several times a day. `retired_at` means the seller took
@@ -243,6 +245,67 @@ rows that succeeded match and come back as unchanged.
 
 ---
 
+## Product images
+
+Photos live in Supabase Storage, in one bucket, `product-images`. **There is no
+images table.** A product's library is whatever objects exist under its prefix —
+nothing tracks them separately, so an object and its row can never disagree
+about what exists.
+
+### Object paths
+
+```
+<tenant_id>/<item_id>/<uuid>.<ext>
+```
+
+The tenant id is the first path segment because the bucket policies derive
+access from it, using the same `user_tenant_ids()` helper the table policies
+use. A second source of truth for which seller owns which folder is exactly the
+bug this shape avoids.
+
+Extensions and content types are limited to `image/jpeg`, `image/png`,
+`image/webp`, enforced on the bucket and again in `image-model.ts` before upload.
+
+### Bucket
+
+| setting | value | why |
+|---|---|---|
+| `public` flag | **true** | Makes `GET /object/public/<bucket>/<path>` serve without auth, which is how the storefront renders. Signed URLs expire, which defeats CDN and PWA caching and adds a signing round-trip per tile on a mobile connection. Object names are uuids, so a path is not guessable. |
+| SELECT policy | seller, own prefix only | **Not the same thing as the public flag.** A SELECT policy on `storage.objects` is what `list()` reads, so a bucket-wide one lets any holder of the publishable key enumerate every tenant's objects. One photograph is public; an inventory of a client's catalogue is not. |
+| INSERT / UPDATE / DELETE | seller, own prefix only | `(storage.foldername(name))[1]` must appear in `user_tenant_ids()`. |
+| anon and buyer | no policy at all | An anonymous auth user holds `authenticated`, so every policy here is paired with a restrictive `not is_anonymous_user()` gate, read included. |
+
+So: anyone holding an exact path can fetch that one file, nobody can enumerate,
+and **the bucket is never world-writable.**
+
+### Resolution order
+
+One function in `image-model.ts`, used by both apps, so the dashboard and the
+storefront cannot disagree about which photo a variant shows:
+
+```
+variant.image_path  →  item.image_path  →  item.image_url  →  empty state
+```
+
+`image_path` holds the object path, never a full URL. The public URL is derived
+at render time, so a project ref change does not invalidate every row.
+
+`items.image_url` is the last stop before empty and is **legacy**: it is how the
+seeded SVGs under `apps/*/public/products/` still render without a data
+migration. Uploads only ever write `image_path`. Nothing writes `image_url`
+again.
+
+Empty is a documented state — a neutral block — never `undefined` and never a
+broken `<img>`.
+
+### Orders are unaffected
+
+`order_items` carries no image column and gains none. A photo replaced next
+month must not change what a buyer sees on an order from last week, and keeping
+images out of the snapshot is the cheapest way to guarantee it.
+
+---
+
 ## RLS
 
 Enabled on all eight tables. No exceptions, including `import_batches`.
@@ -275,6 +338,15 @@ labels). `whatsapp_number` is fine to expose — it's on the storefront anyway.
 every table, assert zero rows belonging to tenant B. Run before every go-live.
 It must also assert that an anonymous auth user (a buyer session) reads nothing
 beyond its own orders, and cannot list `orders` at all.
+
+**Storage is part of the gate.** The same test signs in as a seller and attempts
+to write, read and delete under another tenant's prefix in `product-images`, and
+attempts a write as `anon` and as a buyer session. Storage is a separate service
+from PostgREST, so these go through the `supabase-js` storage client on a real
+seller session — a denied write returns an error, but **a denied read or delete
+returns an empty array, not an error**. Read and delete assertions must
+therefore check against service-key truth — the foreign object is still there —
+not against `error !== null`.
 
 ---
 

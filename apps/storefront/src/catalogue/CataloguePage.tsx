@@ -1,5 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
-import { getSupabaseClient, useTenant } from '@chopchop/shared';
+import {
+  getSupabaseClient,
+  getSupabaseUrl,
+  resolveImageUrl,
+  useTenant,
+} from '@chopchop/shared';
 import { loadCatalogue, type Catalogue, type StorefrontItem } from '../storefront-data';
 import { isSoldOut, money } from '../storefront-model';
 import styles from './CataloguePage.module.css';
@@ -105,10 +110,10 @@ export function CataloguePage({ onOpen }: { onOpen: (item: StorefrontItem) => vo
                   data-sold-out={soldOut || undefined}
                   onClick={() => onOpen(item)}
                 >
-                  <span className={styles.thumb} data-empty={item.imageUrl ? undefined : true}>
-                    {item.imageUrl ? (
+                  <span className={styles.thumb} data-empty={tileSrc(item) ? undefined : true}>
+                    {tileSrc(item) ? (
                       <img
-                        src={item.imageUrl}
+                        src={tileSrc(item)!}
                         alt=""
                         loading="lazy"
                         onError={(event) => {
@@ -134,4 +139,15 @@ export function CataloguePage({ onOpen }: { onOpen: (item: StorefrontItem) => vo
       )}
     </section>
   );
+}
+
+/**
+ * The tile always shows the product's primary, never a variant's photo.
+ *
+ * A grid where the picture changes with whichever variant happens to sort first
+ * is a grid the seller cannot predict. The variant photo appears in the sheet,
+ * once the buyer has chosen.
+ */
+function tileSrc(item: StorefrontItem): string | null {
+  return resolveImageUrl(getSupabaseUrl(), item);
 }

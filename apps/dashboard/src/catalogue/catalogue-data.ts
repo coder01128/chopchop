@@ -96,7 +96,7 @@ export async function loadVariants(
 ): Promise<VariantRecord[]> {
   const { data, error } = await client
     .from('variants')
-    .select('id, attributes, price, stock, available, sku, retired_at')
+    .select('id, attributes, price, stock, available, sku, retired_at, image_path')
     .eq('item_id', itemId);
   if (error) throw new Error(`Could not load variants: ${error.message}`);
 
@@ -108,6 +108,7 @@ export async function loadVariants(
     available: row.available,
     sku: row.sku,
     retiredAt: row.retired_at,
+    imagePath: row.image_path,
   }));
 }
 
@@ -200,9 +201,19 @@ export function describeAge(iso: string): string {
 
 export interface ItemDraft {
   id: string | null;
+  /**
+   * The id a product being created will be saved under, minted by the modal
+   * when it opens. The Storage object path contains the item id, so a photo
+   * taken before the first save needs an id to sit under; the RPC inserts with
+   * this rather than generating one. Ignored once `id` is set.
+   */
+  newId: string;
   name: string;
   description: string;
+  /** Legacy free-text field. Still read, never written by the upload control. */
   imageUrl: string;
+  /** Storage object path of the primary photo, or '' for none. */
+  imagePath: string;
   categoryId: string | null;
   active: boolean;
 }
@@ -246,9 +257,16 @@ export async function saveProduct(
     p_tenant_id: tenantId,
     p_item: {
       id: draft.id,
+      // Only meaningful on an insert. The RPC refuses an id already in use
+      // rather than updating that row, in either tenant.
+      new_id: draft.id ? null : draft.newId,
       name: draft.name.trim(),
       description: draft.description.trim(),
       image_url: draft.imageUrl.trim(),
+      // Always sent from the modal, so clearing the primary clears it. The
+      // import pipeline sends no such key at all, which is what stops a
+      // price-list re-import wiping the seller's photographs.
+      image_path: draft.imagePath.trim(),
       category_id: draft.categoryId,
       active: draft.active,
     },
@@ -261,6 +279,7 @@ export async function saveProduct(
       stock: cell.stock.trim() === '' ? null : Number(cell.stock),
       available: cell.available,
       sku: cell.sku.trim(),
+      image_path: cell.imagePath ?? '',
     })),
     p_removals: actionable,
   });
@@ -277,6 +296,7 @@ export async function saveProduct(
       available: boolean;
       sku: string | null;
       retired_at: string | null;
+      image_path: string | null;
     }[];
   };
 
@@ -297,6 +317,7 @@ export async function saveProduct(
       available: row.available,
       sku: row.sku,
       retiredAt: row.retired_at,
+      imagePath: row.image_path,
     })),
   };
 }

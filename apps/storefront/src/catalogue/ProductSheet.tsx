@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { useTenant } from '@chopchop/shared';
+import { getSupabaseUrl, resolveImageUrl, useTenant } from '@chopchop/shared';
 import type { StorefrontItem } from '../storefront-data';
 import {
   isSoldOut,
@@ -56,6 +56,10 @@ export function ProductSheet({
 
   const complete = selectors.every((selector) => chosen[selector.name] !== undefined);
   const variant = complete ? matchVariant(item.variants, chosen) : null;
+
+  // One function, shared with the dashboard: variant photo, else the product
+  // primary, else the legacy url, else nothing.
+  const imageSrc = resolveImageUrl(getSupabaseUrl(), item, variant);
   const soldOut = variant ? isSoldOut(variant, tenant.stockMode) : false;
   const qty = parseQty(qtyText, tenant.saleMode);
 
@@ -86,9 +90,31 @@ export function ProductSheet({
           </button>
         </header>
 
-        {item.imageUrl && (
-          <img className={styles.image} src={item.imageUrl} alt="" loading="lazy" />
-        )}
+        {/* The primary until the buyer picks a variant that has its own photo,
+            then that one. A variant with none falls back to the primary, and a
+            product with neither renders the neutral block rather than nothing —
+            before this the sheet drew no placeholder and no error handler, so a
+            path that failed to load left a broken image on the buyer's screen. */}
+        <span className={styles.imageHolder} data-empty={imageSrc ? undefined : true}>
+          {imageSrc ? (
+            <img
+              className={styles.image}
+              // Keyed on the source so switching variant swaps the picture
+              // rather than reusing an element still marked broken.
+              key={imageSrc}
+              src={imageSrc}
+              alt=""
+              loading="lazy"
+              onError={(event) => {
+                const holder = event.currentTarget.parentElement;
+                if (holder) holder.dataset.empty = 'true';
+                event.currentTarget.remove();
+              }}
+            />
+          ) : (
+            <span className={styles.imageMark}>No photo</span>
+          )}
+        </span>
 
         {item.description && <p className={styles.blurb}>{item.description}</p>}
 
