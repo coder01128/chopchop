@@ -79,6 +79,12 @@ Guess by header name, then let the seller correct every mapping. Unmapped
 columns are ignored, and the screen says so — a silently dropped column is a
 seller's missing data.
 
+For a tenant with `stock_mode = 'availability'` the stock column is ignored:
+`save_product` reads the mode off the tenant row and writes no stock figure for
+them. The mapping screen must say this, naming the column it is ignoring.
+Silent is not acceptable — the seller mapped that column and has to be told it
+goes nowhere.
+
 Attribute columns are offered from the tenant's `attribute_schema`. This is the
 one place `attribute_schema` is read as a palette for mapping, and it does not
 change the rule that a product's selectors are rendered from its own variants'
@@ -152,8 +158,13 @@ a phone in their shop is the expected case.
 
 - Per item, through `save_product`. No direct inserts into `items` or `variants`.
 - Categories created first, so items have something to attach to.
-- Write an `import_batches` row recording the batch and its outcome, so a
-  partial failure is visible afterwards rather than invisible.
+- The `import_batches` row follows the lifecycle the table already has, and no
+  migration is added for this ticket. Written when the review screen opens:
+  `source = 'spreadsheet'`, `raw` = the parsed rows, `status = 'pending'`.
+  Updated to `applied` on commit, or `discarded` if the seller cancels.
+- Per-item failures are reported on the commit screen, not stored. Re-importing
+  the same file is the recovery path, and it is safe because matching is in this
+  ticket — the rows that succeeded come back as `unchanged`.
 - Report per-item failures in the result. Do not roll the whole batch back —
   a seller who imported 190 of 200 rows wants the 190.
 

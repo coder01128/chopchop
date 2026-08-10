@@ -231,6 +231,16 @@ Extraction output lands here for review. It never writes to `items` or
 | `status` | text | `pending` \| `applied` \| `discarded` |
 | `created_at` | timestamptz | |
 
+The row is written when the review screen opens, at `pending`. It becomes
+`applied` on commit and `discarded` if the seller cancels.
+
+**`applied` means the batch was applied, not that every row in it succeeded.**
+A commit does not roll back — a seller who imported 190 of 200 rows wants the
+190 — so a batch with per-item failures is still `applied`. The failures are
+reported on the commit screen at the time; nothing records them afterwards.
+Re-importing the same file is the recovery path, and it is safe because the
+rows that succeeded match and come back as unchanged.
+
 ---
 
 ## RLS

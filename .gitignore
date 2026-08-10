@@ -4,3 +4,7 @@
 node_modules
 dist
 .DS_Store
+
+# Throwaway spreadsheets for exercising the import file picker by hand. Demo
+# data, not fixtures — the import tests build their own files in memory.
+samples

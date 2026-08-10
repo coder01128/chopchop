@@ -3,7 +3,7 @@
 Context for picking this up cold in a new session. `CLAUDE.md` is the rules for
 the build agent; `SCHEMA.md` is the database contract. **This file is the why.**
 
-Last updated: 9 Aug 2026, after ticket 05 and the definer-privilege guard.
+Last updated: 10 Aug 2026, after ticket 06 spreadsheet import.
 
 ---
 
@@ -72,6 +72,8 @@ It is a shipped-but-dormant build, not a live business being migrated.
 | Order references are random, not sequential | A counter needs a `SECURITY DEFINER` helper granted to `authenticated`, which lets any buyer session read a client's order count. 5 characters from `23456789ABCDEFGHJKMNPQRSTVWXYZ`, unique index decides, 12 attempts then `40001`. |
 | `place_order` reads prices from `variants`, never the payload | The buyer's session can insert order lines. If it also supplied `price_snapshot`, a buyer could set their own price. |
 | Delivery address is plain `text` | jsonb buys structure nothing in v1 reads, and the dashboard needs one readable block a seller can copy into Maps. Real SA addresses are gate codes and landmarks, which is what free text is. |
+| Import counters count products, errors count rows | The seller's check is arithmetic — the number on review must be the number their catalogue grows by. A variant-level count reads as lost products. The commit button counts new + updated, because a price-only import would otherwise read zero and disable itself. |
+| A row matching a retired variant imports as new | Matching it would make `save_product` clear `retired_at` and resurrect something the seller removed by hand. Cost: a duplicate sits alongside the retired one, visible on review. |
 
 ---
 
@@ -99,18 +101,35 @@ Done, committed and pushed:
   handoff, buyer status page. `delivery_address` added. 10 SVG product images
   committed locally, so the old `images.example.com` console errors are gone.
 
-Built, not yet committed at the time of writing:
 - **Random references + definer guard** — `place_order` draws a random code;
   `next_order_reference` dropped; `public.security_definer_functions` is a view
   over `pg_proc` (granted `service_role` only) exposing `security_definer`,
   `anon_can_execute` and `authenticated_can_execute`. The guard test asserts a
   per-function privilege map and was mutation-checked, not trusted on a green run.
 
-Remaining to v1: **06 import**, then deployment/domains and an onboarding
-runbook. Metrics deliberately unscheduled until a client has traded.
+Built, not yet committed at the time of writing:
+- **06** — spreadsheet import. `import-model.ts` holds every rule as pure
+  functions; `parse-file.ts` is the only file that knows what a spreadsheet is,
+  and it hands over a headers-plus-rows table — the seam 06B enters at.
+  SheetJS is pinned to the CDN tarball (`xlsx-0.20.3`, npm's `xlsx` is
+  abandoned at 0.18.5) and dynamically imported, so it is a separate chunk
+  fetched only when a file is picked. Commit is one `save_product` call per
+  product, no direct inserts, no removals ever. `import_batches` follows the
+  lifecycle it already had — `pending` on opening review, `applied` on commit,
+  `discarded` on cancel; `applied` does not mean every row succeeded. Verified
+  in the browser against both demo tenants: butchery's mapping screen offers
+  only `Sold by` and names the stock column it is ignoring, shoes' offers only
+  `Size` and `Colour` and honours the count. Re-import of a grown list took the
+  butchery catalogue 12 → 15 with no duplicates and left the omitted product
+  untouched.
 
-Test count: 167 across 7 files — tenant-leak, save-product-rpc,
-confirm-order-rpc, place-order-rpc, variant-model, order-model, storefront-model.
+Remaining to v1: **06B vision import**, product images (see open questions),
+then deployment/domains and an onboarding runbook. Metrics deliberately
+unscheduled until a client has traded.
+
+Test count: 216 across 8 files — tenant-leak, save-product-rpc,
+confirm-order-rpc, place-order-rpc, variant-model, order-model,
+storefront-model, import-model.
 
 Repo: `C:\ccode\git-repos\chopchop`, GitHub `coder01128/chopchop` (private —
 Claude cannot read it; the GitHub connector has been failing). Docs in the root:
@@ -181,6 +200,20 @@ Don't claim to have done something and then not run the tool.
 
 ## Live open questions
 
+- **Product images are URL-only, and that blocks deployment.** The edit modal
+  has an IMAGE URL text field, there is no Storage bucket on the project, and
+  there is no upload control anywhere. A seller with photos on their phone
+  cannot produce a URL, so a handover today ships a storefront the client
+  cannot put pictures in. Needs its own ticket: bucket, bucket RLS, and a
+  tap-to-add / open-camera control on mobile.
+- **The native OS file picker is confirmed by hand on desktop only.** Mobile is
+  unverified, and on a phone that dialog is the path to Drive, Dropbox and
+  anything saved out of a WhatsApp chat. One tap-through on a deployed URL
+  before a client sees it. `samples/` holds throwaway spreadsheets for exactly
+  that, and is gitignored.
+- **06B vision extraction is specified but not built** — Supabase Edge
+  Function, Anthropic key server-side, entering at the mapping step via the
+  headers-plus-rows seam that ticket 06 built against.
 - **`rls_auto_enable`** — a `SECURITY DEFINER`, volatile, zero-argument function
   no migration here created. Both `anon` and `authenticated` hold `EXECUTE`; it
   was never revoked from `PUBLIC`. PostgREST routes it at

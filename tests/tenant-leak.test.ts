@@ -378,7 +378,166 @@ describe('orders are not writable across tenants', () => {
   });
 });
 
+/**
+ * Import (ticket 06). The commit path is three writes — the batch row, any
+ * created categories, and one `save_product` call per product — so all three
+ * are pointed at the other tenant here. A seller must not be able to import
+ * into a business that is not theirs, and the `anon` role must not be able to
+ * put anything into `import_batches` at all.
+ */
+describe('import is tenant-scoped', () => {
+  const created: string[] = [];
+
+  afterAll(async () => {
+    if (created.length > 0) await admin.from('import_batches').delete().in('id', created);
+    await admin.from('categories').delete().eq('name', 'Leak Test Category');
+    await admin.from('items').delete().eq('name', 'Leak Test Import Product');
+  });
+
+  it('a seller cannot write a batch into another tenant', async () => {
+    const { data, error } = await butcheryClient
+      .from('import_batches')
+      .insert({
+        tenant_id: shoesId,
+        source: 'spreadsheet',
+        raw: [{ line: 2, name: 'Leak Test Import Product', price: 1 }],
+        status: 'pending',
+      })
+      .select('id');
+
+    for (const row of data ?? []) created.push(row.id);
+
+    expect(
+      error,
+      'CROSS-TENANT IMPORT: a seller wrote an import batch into another tenant. ' +
+        'The WITH CHECK on import_batches_authenticated_all is not holding.',
+    ).not.toBeNull();
+    expect(data ?? []).toEqual([]);
+  });
+
+  it('a seller cannot read another tenant\'s batches', async () => {
+    const { data: seeded, error: seedError } = await admin
+      .from('import_batches')
+      .insert({
+        tenant_id: shoesId,
+        source: 'spreadsheet',
+        raw: [{ line: 2, name: 'Leak Test Import Product', price: 1 }],
+        status: 'pending',
+      })
+      .select('id')
+      .single();
+    expect(seedError, `could not create the fixture batch: ${seedError?.message}`).toBeNull();
+    created.push(seeded!.id);
+
+    const { data } = await butcheryClient.from('import_batches').select('*').eq('id', seeded!.id);
+    expect(
+      data ?? [],
+      'TENANT LEAK in "import_batches": a seller read another tenant\'s unreviewed ' +
+        'extraction output.',
+    ).toEqual([]);
+
+    // …and cannot move it either. A silent no-op is the expected shape.
+    const { data: moved } = await butcheryClient
+      .from('import_batches')
+      .update({ status: 'applied' })
+      .eq('id', seeded!.id)
+      .select();
+    expect(moved ?? [], 'A seller changed another tenant\'s import batch.').toEqual([]);
+  });
+
+  it('a seller cannot create a category in another tenant', async () => {
+    const { data, error } = await butcheryClient
+      .from('categories')
+      .insert({ tenant_id: shoesId, name: 'Leak Test Category', sort_order: 99 })
+      .select('id');
+
+    expect(
+      error,
+      'CROSS-TENANT IMPORT: a seller created a category in another tenant. Import ' +
+        'creates categories before it writes products.',
+    ).not.toBeNull();
+    expect(data ?? []).toEqual([]);
+  });
+
+  it('a seller cannot commit a product into another tenant', async () => {
+    // The commit step calls save_product per item. It is SECURITY INVOKER and
+    // checks membership explicitly, so this is a refusal, not an empty result.
+    const { error } = await butcheryClient.rpc('save_product', {
+      p_tenant_id: shoesId,
+      p_item: { id: null, name: 'Leak Test Import Product', description: '', image_url: '', category_id: null, active: true },
+      p_variants: [{ id: null, attributes: {}, price: 1, stock: 1, available: true, sku: '' }],
+      p_removals: [],
+    });
+
+    expect(
+      error,
+      'CROSS-TENANT IMPORT: save_product accepted another tenant\'s id from a seller. ' +
+        'Every product an import writes goes through this call.',
+    ).not.toBeNull();
+
+    const { count } = await admin
+      .from('items')
+      .select('*', { count: 'exact', head: true })
+      .eq('name', 'Leak Test Import Product');
+    expect(count, 'A product was written into another tenant by save_product.').toBe(0);
+  });
+
+  it('a seller can write a batch into its own tenant (the checks above are not vacuous)', async () => {
+    const { data, error } = await butcheryClient
+      .from('import_batches')
+      .insert({
+        tenant_id: butcheryId,
+        source: 'spreadsheet',
+        raw: [{ line: 2, name: 'Leak Test Import Product', price: 1 }],
+        status: 'pending',
+      })
+      .select('id')
+      .single();
+
+    expect(error, `a seller cannot record their own import: ${error?.message}`).toBeNull();
+    created.push(data!.id);
+
+    const { data: applied } = await butcheryClient
+      .from('import_batches')
+      .update({ status: 'applied' })
+      .eq('id', data!.id)
+      .select();
+    expect(applied ?? [], 'A seller cannot close their own import batch.').toHaveLength(1);
+  });
+});
+
 describe('anonymous storefront', () => {
+  it('cannot write to import_batches', async () => {
+    const { count: before } = await admin
+      .from('import_batches')
+      .select('*', { count: 'exact', head: true })
+      .eq('tenant_id', butcheryId);
+
+    const anon = anonClient();
+    const { data, error } = await anon
+      .from('import_batches')
+      .insert({
+        tenant_id: butcheryId,
+        source: 'spreadsheet',
+        raw: [{ line: 2, name: 'Leak Test Import Product', price: 1 }],
+        status: 'pending',
+      })
+      .select('id');
+
+    expect(
+      error,
+      'ANONYMOUS WRITE ALLOWED on "import_batches": the anon role holds no grant ' +
+        'on this table at all, so this must be refused outright.',
+    ).not.toBeNull();
+    expect(data ?? []).toEqual([]);
+
+    const { count: after } = await admin
+      .from('import_batches')
+      .select('*', { count: 'exact', head: true })
+      .eq('tenant_id', butcheryId);
+    expect(after ?? 0, 'An anonymous client inserted an import batch.').toBe(before ?? 0);
+  });
+
   it('cannot list orders', async () => {
     const anon = anonClient();
     const { data, error } = await anon.from('orders').select('*');

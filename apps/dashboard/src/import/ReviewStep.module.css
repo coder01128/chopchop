@@ -1,0 +1,334 @@
+.step {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.heading {
+  margin: 0.3rem 0 0;
+  font-size: 1.3rem;
+  letter-spacing: -0.01em;
+}
+
+.counts {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.counts li {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 0.4rem 0.7rem;
+  font-size: 0.82rem;
+  background: var(--panel);
+}
+
+.counts li strong {
+  font-family: var(--mono);
+  font-size: 1rem;
+  margin-right: 0.3rem;
+}
+
+.counts li[data-tone='new'],
+.counts li[data-tone='update'] {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.counts li[data-tone='warn'],
+.counts li[data-tone='error'] {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+.promise {
+  margin: 0;
+  border: 1px dashed var(--line);
+  border-radius: var(--radius);
+  padding: 0.55rem 0.7rem;
+  font-size: 0.85rem;
+}
+
+.block {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--panel);
+  padding: 0.8rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  min-width: 0;
+}
+
+.blockHeading {
+  margin: 0;
+  font-family: var(--mono);
+  font-size: 0.64rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.blockBlurb {
+  margin: 0;
+  font-size: 0.85rem;
+  opacity: 0.85;
+}
+
+.decisions,
+.ambiguous,
+.errors,
+.cards {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.decision {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 0.5rem;
+}
+
+.decision:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+.decisionName {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  align-items: baseline;
+}
+
+.decisionCount {
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  opacity: 0.7;
+}
+
+.select select {
+  width: 100%;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 0.45rem 0.5rem;
+  color: var(--ink);
+}
+
+.ambiguous li {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  align-items: flex-start;
+  border: 1px solid var(--danger);
+  border-radius: var(--radius);
+  padding: 0.6rem 0.7rem;
+}
+
+.ambiguousName {
+  margin: 0;
+  font-weight: 600;
+}
+
+.ambiguousReason {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--danger);
+}
+
+.ambiguousNote {
+  font-size: 0.78rem;
+  opacity: 0.75;
+}
+
+.errors li {
+  font-size: 0.85rem;
+  overflow-wrap: anywhere;
+}
+
+.line {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  opacity: 0.7;
+}
+
+/* Table above 48rem, cards below it. A 40-row table is unusable at 390px. */
+.tableWrap {
+  display: none;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.86rem;
+}
+
+.table th {
+  text-align: left;
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  opacity: 0.75;
+  padding: 0.35rem 0.5rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.table td {
+  padding: 0.4rem 0.5rem;
+  border-bottom: 1px solid var(--line);
+  vertical-align: top;
+}
+
+.variant,
+.change {
+  overflow-wrap: anywhere;
+}
+
+.money {
+  font-family: var(--mono);
+  text-align: right;
+  white-space: nowrap;
+}
+
+.badge {
+  display: inline-block;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 0.1rem 0.4rem;
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.badge[data-outcome='new'],
+.badge[data-outcome='update'] {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.badge[data-outcome='ambiguous'] {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+.card {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 0.6rem 0.7rem;
+  background: var(--bg);
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.cardHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
+.cardName {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.cardMeta,
+.cardChange {
+  margin: 0;
+  font-size: 0.82rem;
+  opacity: 0.85;
+  overflow-wrap: anywhere;
+}
+
+.actions {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.primary,
+.ghost {
+  border-radius: var(--radius);
+  padding: 0.55rem 0.95rem;
+  font-family: var(--mono);
+  font-size: 0.64rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.primary {
+  background: var(--accent);
+  color: var(--accent-ink);
+  border: 1px solid var(--accent);
+}
+
+.primary:disabled {
+  background: transparent;
+  border-color: var(--line);
+  color: var(--ink);
+  opacity: 0.5;
+  cursor: default;
+}
+
+.ghost {
+  background: transparent;
+  border: 1px solid var(--line);
+  color: var(--ink);
+}
+
+.ghost:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+@media (min-width: 48rem) {
+  .tableWrap {
+    display: block;
+    overflow-x: auto;
+  }
+
+  .cards {
+    display: none;
+  }
+
+  .decision {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .decisionName {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .select {
+    flex: 0 0 18rem;
+  }
+}
