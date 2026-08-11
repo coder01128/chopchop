@@ -1,14 +1,16 @@
 /**
  * Which tenant is this storefront?
  *
- * The storefront is deployed per client on their own domain, so in production
- * the slug is fixed per deployment and comes from `VITE_TENANT_SLUG`. In
- * development one dev server has to be able to serve both demo tenants — they
- * are configured as opposites deliberately, and a feature that works for one
- * and not the other isn't finished — so a leading path segment overrides it.
+ * One deployment serves every client, on the apex, at `/<slug>` — ticket 08.
+ * So in production the slug is the first path segment, and the same addressing
+ * runs in development, where one dev server has to serve both demo tenants:
+ * they are configured as opposites deliberately, and a feature that works for
+ * one and not the other isn't finished.
  *
- * Path wins over env, which means a production deployment can still be checked
- * against another tenant's slug without a rebuild.
+ * `VITE_TENANT_SLUG` is the fallback for the case that does not exist yet — a
+ * client on their own domain, where there is no slug segment to read. It is
+ * unset on the apex deployment. Path wins over env, so a per-client deployment
+ * can still be checked against another tenant without a rebuild.
  */
 
 /**
@@ -24,6 +26,18 @@ function firstSegment(pathname: string): string | null {
   const segment = pathname.split('/').filter(Boolean)[0];
   if (!segment || RESERVED_SEGMENTS.includes(segment)) return null;
   return segment;
+}
+
+/**
+ * The bare apex — `chopchoporder.co.za` with no path at all.
+ *
+ * Distinct from an unknown slug, and the two must not render the same screen.
+ * A stranger typing the domain after seeing a link is not looking at a broken
+ * shop; they are looking at the front door, and it renders a holding page.
+ * `/order/<id>` with no slug *is* a broken link and stays on Not Found.
+ */
+export function isBareRoot(pathname: string): boolean {
+  return pathname.split('/').filter(Boolean).length === 0;
 }
 
 export function resolveSlugFromLocation(pathname: string): string | null {

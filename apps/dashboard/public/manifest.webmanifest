@@ -1,0 +1,21 @@
+{
+  "id": "/",
+  "name": "ChopChop Dashboard",
+  "short_name": "ChopChop",
+  "description": "Orders and catalogue for your business.",
+  "start_url": "/orders",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#12120f",
+  "theme_color": "#12120f",
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    {
+      "src": "/icons/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

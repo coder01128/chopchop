@@ -1,0 +1,32 @@
+.screen {
+  min-height: 100%;
+  display: grid;
+  place-items: center;
+  padding: 2rem 1.25rem;
+}
+
+.card {
+  width: 100%;
+  max-width: 26rem;
+  text-align: center;
+}
+
+.wordmark {
+  margin: 0;
+  font-size: clamp(2.2rem, 12vw, 3.2rem);
+  letter-spacing: -0.03em;
+  line-height: 1;
+  color: var(--ink);
+}
+
+/* The one accent on the page. Nothing here is a tenant's brand — no tenant
+   resolved — so this is the neutral default from theme.css. */
+.mark {
+  color: var(--accent);
+}
+
+.body {
+  margin: 1rem 0 0;
+  color: var(--ink);
+  opacity: 0.7;
+}

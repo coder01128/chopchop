@@ -35,19 +35,20 @@ export function StatusPage() {
 
   const [placed, setPlaced] = useState<PlacedOrder | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [failed, setFailed] = useState(false);
 
   useEffect(() => {
     if (!orderId) return;
     let active = true;
 
     setLoading(true);
+    setFailed(false);
     loadOrder(client, orderId)
       .then((loaded) => {
         if (active) setPlaced(loaded);
       })
-      .catch((loadError) => {
-        if (active) setError(loadError instanceof Error ? loadError.message : String(loadError));
+      .catch(() => {
+        if (active) setFailed(true);
       })
       .finally(() => {
         if (active) setLoading(false);
@@ -84,11 +85,21 @@ export function StatusPage() {
 
   if (loading) return <p className={styles.loading}>Loading…</p>;
 
-  if (error) {
+  // Only genuine failures reach here — a network drop, or Supabase down. A
+  // refused read is not one of them: that means this device does not hold the
+  // order, and it falls through to the screen below. Nothing renders the
+  // database's own words either way.
+  if (failed) {
     return (
-      <p className={styles.error} role="alert">
-        {error}
-      </p>
+      <section className={styles.page}>
+        <h1 className={styles.heading}>We could not load this order</h1>
+        <p className={styles.body}>
+          Check your connection and try again. Your order is safe — the shop already has it.
+        </p>
+        <Link className={styles.back} to={shopPath(window.location.pathname)}>
+          Back to {tenant.label('catalogue', 'the shop')}
+        </Link>
+      </section>
     );
   }
 

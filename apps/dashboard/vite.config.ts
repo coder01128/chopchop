@@ -1,6 +1,12 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
+// This file is in the app's tsconfig `include`, and the app's `types` is
+// ["vite/client"] — browser typings, which have no `process`. Declaring the
+// one member used here keeps `npm run typecheck` clean without pulling
+// @types/node into an app that never runs in Node.
+declare const process: { env: Record<string, string | undefined> };
+
 export default defineConfig({
   plugins: [react()],
   // One .env at the repo root serves both apps and the node scripts. Only

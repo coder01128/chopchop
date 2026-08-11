@@ -17,6 +17,7 @@ import {
   lineTotal,
   matchVariant,
   parseQty,
+  readsAsNotOurs,
   plainMoney,
   quantityStep,
   selectorsFor,
@@ -277,5 +278,34 @@ describe('buyer-facing status', () => {
     expect(showsWeighedQuantity({ qty: 1.5, qtyConfirmed: null }, 'weight')).toBe(false);
     // And never on a unit tenant, where no weight language appears at all.
     expect(showsWeighedQuantity({ qty: 2, qtyConfirmed: 3 }, 'unit')).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// A refused read is not an error the buyer should ever see.
+// ---------------------------------------------------------------------------
+
+describe('readsAsNotOurs', () => {
+  // The session-less case: no grant on `orders` for anon, so PostgREST refuses
+  // before RLS is consulted. Opening a forwarded link, or the same link on a
+  // laptop, lands here — and to the buyer it means the same thing as an order
+  // that isn't theirs.
+  it('is true for a refused read', () => {
+    expect(readsAsNotOurs({ code: '42501', message: 'permission denied for table orders' })).toBe(
+      true,
+    );
+  });
+
+  it('is true for a missing or rejected session', () => {
+    expect(readsAsNotOurs({ code: 'PGRST301', message: 'JWT expired' })).toBe(true);
+    expect(readsAsNotOurs({ code: null, message: 'invalid JWT' })).toBe(true);
+  });
+
+  // Everything else is a real failure and gets the try-again screen, never the
+  // database's own words.
+  it('is false for a genuine failure', () => {
+    expect(readsAsNotOurs({ code: '500', message: 'Failed to fetch' })).toBe(false);
+    expect(readsAsNotOurs({ code: null, message: null })).toBe(false);
+    expect(readsAsNotOurs({})).toBe(false);
   });
 });

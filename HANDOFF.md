@@ -3,7 +3,8 @@
 Context for picking this up cold in a new session. `CLAUDE.md` is the rules for
 the build agent; `SCHEMA.md` is the database contract. **This file is the why.**
 
-Last updated: 10 Aug 2026, after ticket 07 product images.
+Last updated: 11 Aug 2026, after ticket 08 deployment. `DEPLOY-HANDOFF.md`
+holds the Vercel, DNS and Supabase account setup.
 
 ---
 
@@ -74,6 +75,12 @@ It is a shipped-but-dormant build, not a live business being migrated.
 | Delivery address is plain `text` | jsonb buys structure nothing in v1 reads, and the dashboard needs one readable block a seller can copy into Maps. Real SA addresses are gate codes and landmarks, which is what free text is. |
 | Import counters count products, errors count rows | The seller's check is arithmetic — the number on review must be the number their catalogue grows by. A variant-level count reads as lost products. The commit button counts new + updated, because a price-only import would otherwise read zero and disable itself. |
 | A row matching a retired variant imports as new | Matching it would make `save_product` clear `retired_at` and resurrect something the seller removed by hand. Cost: a duplicate sits alongside the retired one, visible on review. |
+| One storefront deployment on the apex, every client at `/<slug>` | Per-client deployments meant a Vercel project, a domain and an env var per client — the fork-per-client cost this whole product exists to remove, reintroduced at the hosting layer. `VITE_TENANT_SLUG` survives as the fallback for a client who later wants their own domain; it is unset on the apex. Path wins over env, so both work from one bundle. |
+| **The storefront gets no manifest and no install prompt** | Deliberate, and the reason is written out below so nobody "fixes" it. |
+| The dashboard ships a service worker that caches nothing | Chrome dropped the service-worker requirement for menu-install (v108 mobile, v112 desktop), but `beforeinstallprompt` still needs a fetch handler — so without one there is no in-app Install button and a seller has to find the browser menu behind their counter. Caching is the part that was refused: a cached order queue shows an order as unconfirmed an hour after the seller confirmed it. |
+| The secret-key check is key-shaped, not a literal grep | supabase-js's own prefix check puts the literal `sb_secret_` in every bundle. A literal grep fails every build, gets switched off, and leaves no control. Verified in both directions — it passes a clean build and fails an injected key. |
+| `tenants.listed` exists with no directory to feed | So every client from the first is already in the data with an answer they were asked for, rather than a listing appearing later and a client discovering it was done to them. Not granted to `anon`: the grant lands with the surface that justifies it, which is the mistake recorded twice below. |
+| A refused order read renders as "we cannot find that order" | To a buyer, no session and not-your-order are the same fact: this device cannot see it. It was rendering `permission denied for table orders` — Postgres's words in front of a customer. |
 
 ---
 
@@ -144,12 +151,21 @@ Built, not yet committed at the time of writing:
   own id (`new_id`), because the object path contains the item id and a photo
   may be taken before the first save.
 
-Remaining to v1: **06B vision import**, then deployment/domains and an
-onboarding runbook. Metrics deliberately unscheduled until a client has traded.
+- **08** — deployment. Both apps live on `chopchoporder.co.za` and
+  `app.chopchoporder.co.za`; the account setup, DNS zone and every dashboard
+  reading are in `DEPLOY-HANDOFF.md`. In the repo: an SPA rewrite per app
+  (without it a hard refresh on `/demo-butchery` is a 404 from the CDN, which
+  is what a client reads as "my shop is broken"), the bundle secret check wired
+  into both build scripts, the bare-apex holding page, dashboard PWA, `listed`
+  on `tenants`, and `RUNBOOK.md`. `supabase/config.toml` was corrected —
+  see traps.
 
-Test count: 255 across 9 files — tenant-leak, save-product-rpc,
+Remaining to v1: **06B vision import**. Metrics deliberately unscheduled until
+a client has traded.
+
+Test count: 267 across 10 files — tenant-leak, save-product-rpc,
 confirm-order-rpc, place-order-rpc, variant-model, order-model,
-storefront-model, import-model, image-model.
+storefront-model, storefront-routing, import-model, image-model.
 
 Repo: `C:\ccode\git-repos\chopchop`, GitHub `coder01128/chopchop` (private —
 Claude cannot read it; the GitHub connector has been failing). Docs in the root:
@@ -226,8 +242,36 @@ is evaluated in the caller's context: `user_tenant_ids`, `is_active_tenant`,
 `order_belongs_to_tenant`, `is_buyer_order`, `item_is_active`. Anything else that
 is definer *and* executable by `anon` or `authenticated` needs a reason.
 
+**The storefront has no manifest and no install prompt, and that is the
+decision.** It is not an oversight, not a missing ticket, and not something to
+tidy up while passing through. A butchery's customers will not install a shop.
+Checkout needs the network anyway, because the `wa.me` handoff *is* the flow —
+an offline-capable shop that cannot complete an order is a worse lie than one
+that plainly needs signal. And an install prompt on a link someone tapped out
+of a WhatsApp group is friction charged against the seller's conversion rate,
+in exchange for nothing. The storefront still gets the engineering that
+matters: fast first load, cached hashed assets, mobile-first layout. The
+**dashboard** is the installable one — an owner behind their counter opening an
+icon straight into their order queue, which is also what makes web push
+possible on iOS later.
+
+**`supabase/config.toml` is now load-bearing and was a landmine.** It shipped
+as untouched CLI defaults — `site_url` on `127.0.0.1`, redirect list of one
+localhost entry, and `enable_anonymous_sign_ins = false` — while the hosted
+project had been configured by hand in the dashboard. The two never agreed.
+`supabase db push` does not read the `[auth]` block, but **`supabase config
+push` does**, and running it would have switched off anonymous sign-ins on the
+live project: every buyer checkout, gone, with nothing in the repo to explain
+why. The file now mirrors the hosted project. If either is changed, change both.
+
+**Vercel builds run `npm install --prefix=../..` from each app's root
+directory.** That is what lets npm workspaces resolve `@chopchop/shared`, which
+exports raw `./src/index.ts` and has no build step. A build failing on an
+unresolved `@chopchop/shared` is this setting, not the code.
+
 **Never suggest**: self-serve signup · reusing ChowNow or Rembrandt code ·
-deferring import · Vercel CLI deploys · commands that print keys.
+deferring import · Vercel CLI deploys · commands that print keys · a manifest
+or install prompt on the storefront.
 
 ---
 
@@ -279,7 +323,10 @@ Don't claim to have done something and then not run the tool.
 - The real `wa.me` popup has never been exercised end to end — `window.open` was
   stubbed during the ticket 05 browser run to keep demo order text off an
   external host.
-- Dashboard domain — one shared host, or a subdomain per client
+- ~~Dashboard domain — one shared host, or a subdomain per client~~ **settled in
+  ticket 08**: one shared host, `app.chopchoporder.co.za`. The tenant comes from
+  the login, not the hostname — nothing in either app reads
+  `window.location.hostname`.
 - Can sellers edit their own `attribute_schema`, or is it onboarding-only? A bad
   edit orphans existing variants
 - Correcting a mis-tapped status transition — no path exists

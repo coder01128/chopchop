@@ -7,13 +7,19 @@ export type FulfilmentMode = Database['public']['Enums']['fulfilment_mode'];
 export type OrderStatus = Database['public']['Enums']['order_status'];
 
 /**
- * What the storefront can read. `created_at` is withheld from the `anon` role
- * by column grant, so asking for it there fails the whole query.
+ * What the storefront can read. `created_at` and `listed` are withheld from
+ * the `anon` role by column grant, so asking for either there fails the whole
+ * query — not just the column. Keep this list and the grant in
+ * `20260808120200_tighten_grants.sql` in step.
  */
 export const PUBLIC_TENANT_COLUMNS =
   'id, slug, name, whatsapp_number, branding, attribute_schema, sale_mode, stock_mode, fulfilment_mode, active';
 
-export type PublicTenant = Omit<TenantRow, 'created_at'>;
+/**
+ * The omissions are the grant, expressed as a type: a storefront screen that
+ * reaches for `listed` should not compile, never mind fail at runtime.
+ */
+export type PublicTenant = Omit<TenantRow, 'created_at' | 'listed'>;
 
 /**
  * One attribute in a tenant's `attribute_schema`. The product modal is

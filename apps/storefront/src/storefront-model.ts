@@ -400,3 +400,27 @@ export function showsWeighedQuantity(
 ): boolean {
   return saleMode === 'weight' && line.qtyConfirmed !== null && line.qtyConfirmed !== line.qty;
 }
+
+/**
+ * Does this failure mean "not your order" rather than "something broke"?
+ *
+ * A buyer reaches their status page as an anonymous auth user, and that session
+ * lives on one device. Open the same link on a laptop, after clearing storage,
+ * or from a forwarded WhatsApp message, and there is no session — so the read
+ * is refused by grant before RLS is ever consulted, and PostgREST answers
+ * `permission denied for table orders`.
+ *
+ * To the buyer that is the same fact as an order that does not exist: this
+ * device cannot see it. It is not an error and it must never reach the screen
+ * as Postgres wrote it — a raw database string in front of a customer is the
+ * trap HANDOFF already names for sellers, and a buyer has even less idea what
+ * to do with it.
+ */
+export function readsAsNotOurs(error: { code?: string | null; message?: string | null }): boolean {
+  // 42501 insufficient_privilege — no grant, which is the session-less case.
+  // PGRST301 — JWT missing or rejected, the expired-session case.
+  if (error.code === '42501' || error.code === 'PGRST301') return true;
+
+  const message = (error.message ?? '').toLowerCase();
+  return message.includes('permission denied') || message.includes('jwt');
+}

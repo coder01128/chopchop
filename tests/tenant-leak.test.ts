@@ -1214,9 +1214,18 @@ describe('buyer sessions (anonymous auth users)', () => {
           'postgres_changes',
           { event: 'UPDATE', schema: 'public', table: 'orders', filter: `id=eq.${orderA}` },
           (payload) => {
+            const row = payload.new as Record<string, unknown>;
+            // The reset on line 1196 is itself an UPDATE to this row, and
+            // under load — the whole suite running, not this file alone — its
+            // event can arrive after the subscription goes live. Resolving on
+            // whichever event lands first then asserts against `sent` and
+            // fails a policy that is working. Wait for the transition this
+            // test is actually about; the timeout still catches a real
+            // failure to deliver.
+            if (row.status !== 'received') return;
             clearTimeout(timer);
             void buyerA.removeChannel(channel);
-            resolve(payload.new as Record<string, unknown>);
+            resolve(row);
           },
         )
         .subscribe(async (status) => {

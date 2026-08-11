@@ -23,8 +23,8 @@ run on identical code — the difference lives entirely in their `tenants` row.
 ```
 /supabase/migrations/    numbered SQL, the only way schema changes
 /supabase/functions/     edge functions (extraction, notifications)
-/apps/dashboard/         seller app — ONE deployment for all tenants
-/apps/storefront/        buyer PWA — deployed per client, own domain
+/apps/dashboard/         seller app — ONE deployment, app.chopchoporder.co.za
+/apps/storefront/        buyer shop — ONE deployment, chopchoporder.co.za/<slug>
 /packages/shared/        types, tenant config resolution, attribute logic
 /tests/                  leak test lives here and is not optional
 ```
@@ -71,6 +71,18 @@ the source of truth; Supabase is a copy of it.
 
 **Never deploy via Vercel CLI.** `git push` to main only. The CLI has previously
 reset Root Directory settings and broken a live site.
+
+**The dashboard is installable; the storefront is not, deliberately.** The
+storefront has no manifest, no icons and no service worker, and it is not
+getting them — see HANDOFF. A missing manifest there is the decision, not an
+oversight.
+
+**No secret key in a bundle, and the grep is what enforces it.**
+`scripts/check-bundle-secrets.mjs` runs as the second half of every
+`vite build`, so it runs locally, on Vercel and anywhere else. Its patterns are
+key-*shaped* on purpose: supabase-js puts the bare literal `sb_secret_` in every
+bundle, so a literal grep would fail every build and get switched off. Never
+weaken it to a warning, and never print a match.
 
 **No vertical-specific logic in components.** If a component contains the word
 `meat`, `size`, `shoe`, `menu` or any client's name, it is wrong. Behaviour comes
@@ -174,6 +186,8 @@ a component that knows the word `meat`.
 
 ## Open questions — do not guess these
 
-- Whether the dashboard is one deployment on a shared domain (planned) or
-  per-client subdomains
-- Domain for the dashboard
+*(Deployment shape was settled in ticket 08: one storefront deployment on the
+apex serving every client at `/<slug>`, one dashboard on
+`app.chopchoporder.co.za`. A client's own domain later is a separate
+deployment with `VITE_TENANT_SLUG` set, or a hostname→slug lookup — its own
+ticket either way.)*

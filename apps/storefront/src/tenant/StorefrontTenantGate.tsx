@@ -5,8 +5,9 @@ import {
   TenantProvider,
   type PublicTenant,
 } from '@chopchop/shared';
+import { HoldingPage } from './HoldingPage';
 import { NotFound } from './NotFound';
-import { resolveSlugFromLocation } from './useTenantSlug';
+import { isBareRoot, resolveSlugFromLocation } from './useTenantSlug';
 
 type State =
   | { status: 'loading' }
@@ -62,7 +63,17 @@ export function StorefrontTenantGate({ children }: { children: ReactNode }) {
   }, [slug]);
 
   if (state.status === 'loading') return null;
-  if (state.status === 'missing') return <NotFound slug={slug} />;
+
+  if (state.status === 'missing') {
+    // Three ways to get here and only two screens. No slug *and* no path at
+    // all is the front door; everything else — an unknown slug, a switched-off
+    // tenant, a slugless `/order/<id>` — is a link that does not work.
+    return isBareRoot(window.location.pathname) && !slug ? (
+      <HoldingPage />
+    ) : (
+      <NotFound slug={slug} />
+    );
+  }
 
   return <TenantProvider tenant={state.tenant}>{children}</TenantProvider>;
 }

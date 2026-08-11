@@ -3,9 +3,13 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <!-- Set at runtime from the tenant row: this app is deployed per client on
-         their own domain, but the bundle is identical for all of them. -->
-    <title>Loading…</title>
+    <!-- One deployment serves every client at /<slug>, so the title is set at
+         runtime from the tenant row. This value is what a stranger sees on the
+         bare apex before the holding page mounts — never a client's name, and
+         never "Loading…", which is what a stuck tab looks like.
+
+         No manifest and no install prompt here, deliberately. See HANDOFF. -->
+    <title>ChopChop</title>
   </head>
   <body>
     <div id="root"></div>

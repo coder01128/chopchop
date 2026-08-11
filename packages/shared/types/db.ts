@@ -292,6 +292,7 @@ export type Database = {
           created_at: string
           fulfilment_mode: Database["public"]["Enums"]["fulfilment_mode"]
           id: string
+          listed: boolean
           name: string
           sale_mode: Database["public"]["Enums"]["sale_mode"]
           slug: string
@@ -305,6 +306,7 @@ export type Database = {
           created_at?: string
           fulfilment_mode?: Database["public"]["Enums"]["fulfilment_mode"]
           id?: string
+          listed?: boolean
           name: string
           sale_mode?: Database["public"]["Enums"]["sale_mode"]
           slug: string
@@ -318,6 +320,7 @@ export type Database = {
           created_at?: string
           fulfilment_mode?: Database["public"]["Enums"]["fulfilment_mode"]
           id?: string
+          listed?: boolean
           name?: string
           sale_mode?: Database["public"]["Enums"]["sale_mode"]
           slug?: string

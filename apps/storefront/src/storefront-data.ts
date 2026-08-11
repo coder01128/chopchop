@@ -1,4 +1,5 @@
 import type { ChopChopClient, Database } from '@chopchop/shared';
+import { readsAsNotOurs } from './storefront-model';
 import type { CartLine, StorefrontVariant } from './storefront-model';
 
 /**
@@ -205,7 +206,12 @@ export async function loadOrder(
     .eq('id', orderId)
     .maybeSingle();
 
-  if (error) throw new Error(`Could not load this order: ${error.message}`);
+  // A refused read and a missing row are the same fact to the buyer — this
+  // device does not hold that order — so they render the same screen.
+  if (error) {
+    if (readsAsNotOurs(error)) return null;
+    throw new Error('load-failed');
+  }
   if (!order) return null;
 
   const { data: lines, error: lineError } = await client
@@ -214,7 +220,10 @@ export async function loadOrder(
     .eq('order_id', orderId)
     .order('name_snapshot');
 
-  if (lineError) throw new Error(`Could not load this order: ${lineError.message}`);
+  if (lineError) {
+    if (readsAsNotOurs(lineError)) return null;
+    throw new Error('load-failed');
+  }
 
   return { order, lines: (lines ?? []).map((row) => toLine(row as Record<string, unknown>)) };
 }

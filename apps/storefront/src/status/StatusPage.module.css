@@ -8,13 +8,6 @@
   opacity: 0.75;
 }
 
-.error {
-  border: 1px solid var(--danger);
-  border-radius: var(--radius);
-  padding: 0.7rem 0.85rem;
-  color: var(--danger);
-}
-
 .heading {
   margin: 0;
   font-size: 1.55rem;

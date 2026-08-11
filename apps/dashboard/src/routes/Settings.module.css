@@ -15,6 +15,87 @@
   max-width: 38rem;
 }
 
+/* The two settings a seller owns, ahead of the read-only table. */
+.card {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 1rem 1.1rem;
+  margin-bottom: 1rem;
+}
+
+.cardHead {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  align-items: flex-start;
+}
+
+.cardTitle {
+  margin: 0;
+  font-size: 1rem;
+  letter-spacing: -0.01em;
+}
+
+.cardBody {
+  margin: 0.35rem 0 0;
+  font-size: 0.88rem;
+  color: var(--ink);
+  opacity: 0.75;
+  max-width: 34rem;
+}
+
+.cardError {
+  margin: 0.7rem 0 0;
+  font-size: 0.82rem;
+  color: var(--danger);
+}
+
+.switch {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.switch input:disabled {
+  cursor: progress;
+}
+
+.switchLabel {
+  font-family: var(--mono);
+  font-size: 0.64rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.install {
+  background: var(--accent);
+  border: 1px solid var(--accent);
+  color: var(--accent-ink);
+  border-radius: var(--radius);
+  padding: 0.5rem 0.85rem;
+  font-family: var(--mono);
+  font-size: 0.64rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+/* Wide enough for the control to sit beside its explanation rather than under
+   it — below this it stacks, which is the phone case. */
+@media (min-width: 40rem) {
+  .cardHead {
+    flex-direction: row;
+    justify-content: space-between;
+    gap: 1.5rem;
+    align-items: center;
+  }
+}
+
 .table {
   margin: 0;
   border: 1px solid var(--line);
