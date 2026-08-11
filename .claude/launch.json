@@ -5,13 +5,21 @@
       "name": "dashboard",
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "dev:dashboard"],
-      "port": 5173
+      "port": 5173,
+      "autoPort": true
     },
     {
       "name": "storefront",
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "dev:storefront"],
       "port": 5174
+    },
+    {
+      "name": "math-racer",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "C:/ccode/git-repos/math-racer", "run", "dev"],
+      "port": 5180,
+      "autoPort": true
     }
   ]
 }
