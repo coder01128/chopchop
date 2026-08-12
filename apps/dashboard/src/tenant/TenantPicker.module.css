@@ -50,7 +50,7 @@
 }
 
 .option:hover {
-  border-color: var(--accent);
+  border-color: var(--ui-label);
 }
 
 .mark {
@@ -61,7 +61,7 @@
   height: 2rem;
   border-radius: var(--radius);
   font-family: var(--mono);
-  font-size: 0.72rem;
+  font-size: var(--text-xs);
   font-weight: 700;
   /* ink is set inline per tenant — no tenant has resolved yet, so there is no
      --accent-ink on the document to read */
@@ -73,7 +73,7 @@
 
 .slug {
   font-family: var(--mono);
-  font-size: 0.66rem;
+  font-size: var(--text-xs);
   letter-spacing: 0.1em;
   color: var(--ink);
   opacity: 0.6;

@@ -1,0 +1,17 @@
+/*
+ * Dashboard chrome overrides.
+ *
+ * Global on purpose — everything else in this app is a CSS Module, and this
+ * file exists only to restate the one rule that has to hold across all of
+ * them: the dashboard's own furniture never draws text in the tenant's colour.
+ *
+ * `.cc-eyebrow` lives in the shared theme and keeps `var(--accent)` there,
+ * because on the storefront the client's colour is exactly right. Here it is
+ * our product's label, so it takes the fixed dashboard ink.
+ *
+ * Imported after theme.css in main.tsx; same specificity, later wins.
+ */
+
+.cc-eyebrow {
+  color: var(--ui-label);
+}

@@ -75,7 +75,7 @@
   gap: 0.5rem;
   margin-top: 0.2rem;
   font-family: var(--mono);
-  font-size: 0.66rem;
+  font-size: var(--text-xs);
   letter-spacing: 0.06em;
   opacity: 0.85;
 }
@@ -88,7 +88,7 @@
   color: var(--accent);
   text-transform: uppercase;
   letter-spacing: 0.1em;
-  font-size: 0.58rem;
+  font-size: var(--text-xs);
 }
 
 .total {
@@ -99,7 +99,7 @@
   border-top: 1px solid var(--line);
   padding-top: 0.7rem;
   font-family: var(--mono);
-  font-size: 0.68rem;
+  font-size: var(--text-xs);
   letter-spacing: 0.12em;
   text-transform: uppercase;
 }
@@ -121,7 +121,7 @@
 
 .facts dt {
   font-family: var(--mono);
-  font-size: 0.6rem;
+  font-size: var(--text-xs);
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--accent);
@@ -144,7 +144,7 @@
 .back {
   align-self: flex-start;
   font-family: var(--mono);
-  font-size: 0.66rem;
+  font-size: var(--text-xs);
   letter-spacing: 0.12em;
   text-transform: uppercase;
 }

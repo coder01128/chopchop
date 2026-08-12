@@ -19,6 +19,7 @@ export {
 export {
   DEFAULT_ACCENT,
   applyBranding,
+  contrastRatio,
   initialsFor,
   inkOn,
   safeAccent,

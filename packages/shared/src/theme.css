@@ -25,8 +25,45 @@
   --wa: #25d366;
   --danger: #e2725b;
 
+  /*
+   * Fixed UI ink — the dashboard's own chrome.
+   *
+   * The dashboard never draws text in the tenant's colour. `branding.primary`
+   * is arbitrary client data: demo-butchery's #7f1d1d measures 1.87:1 against
+   * --bg and 1.00:1 against --fill2, where small text needs 4.5:1. Picking a
+   * lighter red would not fix it, because the next client supplies their own.
+   * Same reasoning as `branding.labels` — the storefront speaks the client's
+   * language and wears their colours, the dashboard is our product.
+   *
+   * Every value below clears 4.5:1 against ALL FIVE surfaces above, so a token
+   * can move between panels without being re-measured. Worst case is --fill2
+   * (#43433a), the lightest surface:
+   *
+   *   --ui-label  #e8c547   11.18:1 on --bg   5.95:1 on --fill2
+   *   --ui-warn   #ff9b85    9.18:1 on --bg   4.89:1 on --fill2
+   *   --ui-muted  #bdb7a8    9.38:1 on --bg   5.00:1 on --fill2
+   *
+   * --ui-warn is deliberately not --danger (#e2725b), which measures 4.42:1 on
+   * --fill and 3.23:1 on --fill2. A red dark enough to look like a warning on
+   * a dark surface cannot also be readable; this is as red as 4.5:1 allows.
+   */
+  --ui-label: #e8c547;
+  --ui-warn: #ff9b85;
+  --ui-muted: #bdb7a8;
+
   --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   --sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+
+  /*
+   * Type floor. Nothing renders text below --text-xs, in either app.
+   *
+   * There was no shared type token before this: every module carried its own
+   * rem literal, and they ran down to 0.54rem — under 9px on a phone. These
+   * two are the bottom of the scale, not the whole scale; anything at 1rem or
+   * above stays as it is.
+   */
+  --text-xs: 0.8125rem; /* 13px — the floor */
+  --text-sm: 0.875rem; /* 14px */
 
   --rail-width: 15rem;
   --tabbar-height: 3.75rem;
@@ -84,9 +121,14 @@ textarea {
   white-space: nowrap;
 }
 
+/*
+ * Shared by both apps, so it keeps the tenant's accent: on the storefront that
+ * is correct and wanted. The dashboard overrides the colour in `chrome.css`,
+ * because there it is our chrome and not the client's brand.
+ */
 .cc-eyebrow {
   font-family: var(--mono);
-  font-size: 0.68rem;
+  font-size: var(--text-xs);
   letter-spacing: 0.16em;
   text-transform: uppercase;
   color: var(--accent);

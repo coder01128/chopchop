@@ -13,16 +13,16 @@
 
 .label {
   font-family: var(--mono);
-  font-size: 0.7rem;
+  font-size: var(--text-xs);
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--muted);
+  color: var(--ui-muted);
 }
 
 .progressText {
   font-family: var(--mono);
-  font-size: 0.7rem;
-  color: var(--accent);
+  font-size: var(--text-xs);
+  color: var(--ui-label);
 }
 
 .progressTrack {
@@ -59,7 +59,7 @@
 }
 
 .tile[data-primary] {
-  border-color: var(--accent);
+  border-color: var(--ui-label);
 }
 
 /* A deleted or unreachable object leaves the tile as a neutral block, never a
@@ -74,8 +74,8 @@
   place-items: center;
   aspect-ratio: 1;
   font-family: var(--mono);
-  font-size: 0.65rem;
-  color: var(--muted);
+  font-size: var(--text-xs);
+  color: var(--ui-muted);
   background: var(--fill);
   border-radius: var(--radius);
 }
@@ -101,19 +101,19 @@
   border-radius: var(--radius);
   color: var(--ink);
   font-family: var(--mono);
-  font-size: 0.65rem;
+  font-size: var(--text-xs);
   padding: 0.25rem 0.35rem;
   cursor: pointer;
 }
 
 .tileButton:hover:not(:disabled) {
-  border-color: var(--accent);
-  color: var(--accent);
+  border-color: var(--ui-label);
+  color: var(--ui-label);
 }
 
 .tileButton[data-tone='danger']:hover:not(:disabled) {
-  border-color: var(--danger);
-  color: var(--danger);
+  border-color: var(--ui-warn);
+  color: var(--ui-warn);
 }
 
 .tileButton:disabled {
@@ -125,8 +125,8 @@
   flex: 1 1 auto;
   text-align: center;
   font-family: var(--mono);
-  font-size: 0.65rem;
-  color: var(--accent);
+  font-size: var(--text-xs);
+  color: var(--ui-label);
   padding: 0.25rem 0.35rem;
 }
 
@@ -143,10 +143,10 @@
 
 .assign legend {
   font-family: var(--mono);
-  font-size: 0.6rem;
+  font-size: var(--text-xs);
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: var(--muted);
+  color: var(--ui-muted);
   padding: 0 0.25rem;
 }
 
@@ -154,7 +154,7 @@
   display: flex;
   align-items: center;
   gap: 0.4rem;
-  font-size: 0.8rem;
+  font-size: var(--text-sm);
   color: var(--ink);
 }
 
@@ -176,15 +176,15 @@
   border-radius: var(--radius);
   color: var(--ink);
   font-family: var(--mono);
-  font-size: 0.7rem;
+  font-size: var(--text-xs);
   padding: 0.4rem 0.35rem;
   cursor: pointer;
 }
 
 .addButton:hover:not(:disabled),
 .cameraButton:hover:not(:disabled) {
-  border-color: var(--accent);
-  color: var(--accent);
+  border-color: var(--ui-label);
+  color: var(--ui-label);
 }
 
 .addButton:disabled,
@@ -208,8 +208,8 @@
 
 .note {
   margin: 0;
-  font-size: 0.8rem;
-  color: var(--muted);
+  font-size: var(--text-sm);
+  color: var(--ui-muted);
 }
 
 .failure {
@@ -217,6 +217,6 @@
   border: 1px solid var(--danger);
   border-radius: var(--radius);
   padding: 0.4rem 0.5rem;
-  font-size: 0.8rem;
-  color: var(--danger);
+  font-size: var(--text-sm);
+  color: var(--ui-warn);
 }

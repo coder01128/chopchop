@@ -118,7 +118,7 @@
   padding: 0.25rem 0.5rem;
   text-align: center;
   font-family: var(--mono);
-  font-size: 0.6rem;
+  font-size: var(--text-xs);
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--ink);

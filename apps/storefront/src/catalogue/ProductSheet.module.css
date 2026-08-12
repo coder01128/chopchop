@@ -47,7 +47,7 @@
   background: transparent;
   padding: 0.35rem 0.7rem;
   font-family: var(--mono);
-  font-size: 0.62rem;
+  font-size: var(--text-xs);
   letter-spacing: 0.12em;
   text-transform: uppercase;
   cursor: pointer;
@@ -78,7 +78,7 @@
 
 .imageMark {
   font-family: var(--mono);
-  font-size: 0.7rem;
+  font-size: var(--text-xs);
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--muted);
@@ -107,7 +107,7 @@
 .legend {
   padding: 0;
   font-family: var(--mono);
-  font-size: 0.62rem;
+  font-size: var(--text-xs);
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--accent);
@@ -155,7 +155,7 @@
   flex-direction: column;
   gap: 0.25rem;
   font-family: var(--mono);
-  font-size: 0.62rem;
+  font-size: var(--text-xs);
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--accent);
@@ -190,7 +190,7 @@
 
 .estimate {
   font-family: var(--mono);
-  font-size: 0.58rem;
+  font-size: var(--text-xs);
   letter-spacing: 0.08em;
   text-transform: uppercase;
   opacity: 0.75;

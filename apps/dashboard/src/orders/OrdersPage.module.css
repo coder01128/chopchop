@@ -23,7 +23,7 @@
   border: 1px solid var(--accent);
   border-radius: var(--radius);
   padding: 0.4rem 0.7rem;
-  color: var(--accent);
+  color: var(--ui-label);
   font-size: 0.82rem;
 }
 
@@ -32,7 +32,7 @@
   border: 1px solid var(--danger);
   border-radius: var(--radius);
   padding: 0.6rem 0.75rem;
-  color: var(--danger);
+  color: var(--ui-warn);
   font-size: 0.88rem;
 }
 
@@ -80,10 +80,10 @@
   gap: 0.5rem;
   margin: 0 0 0.5rem;
   font-family: var(--mono);
-  font-size: 0.66rem;
+  font-size: var(--text-xs);
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--accent);
+  color: var(--ui-label);
 }
 
 .group[data-quiet] .groupTitle {
@@ -95,7 +95,7 @@
   border: 1px solid var(--line);
   border-radius: 999px;
   padding: 0.05rem 0.4rem;
-  font-size: 0.62rem;
+  font-size: var(--text-xs);
   color: var(--ink);
   opacity: 0.8;
 }
@@ -125,11 +125,11 @@
 }
 
 .row:hover {
-  border-color: var(--accent);
+  border-color: var(--ui-label);
 }
 
 .row[data-stale] {
-  border-left-color: var(--accent);
+  border-left-color: var(--ui-label);
 }
 
 .rowTop,
@@ -157,7 +157,7 @@
 
 .estimate {
   font-family: var(--mono);
-  font-size: 0.54rem;
+  font-size: var(--text-xs);
   letter-spacing: 0.1em;
   text-transform: uppercase;
   opacity: 0.7;
@@ -173,7 +173,7 @@
 
 .meta {
   font-family: var(--mono);
-  font-size: 0.6rem;
+  font-size: var(--text-xs);
   letter-spacing: 0.08em;
   opacity: 0.68;
   flex: 0 0 auto;
@@ -182,8 +182,8 @@
 .staleFlag {
   margin-top: 0.35rem;
   font-family: var(--mono);
-  font-size: 0.58rem;
+  font-size: var(--text-xs);
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: var(--accent);
+  color: var(--ui-label);
 }

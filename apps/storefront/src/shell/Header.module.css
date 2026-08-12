@@ -29,7 +29,7 @@
 
 .tagline {
   font-family: var(--mono);
-  font-size: 0.66rem;
+  font-size: var(--text-xs);
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--accent);
@@ -47,7 +47,7 @@
   padding: 0.4rem 0.75rem;
   color: var(--accent);
   font-family: var(--mono);
-  font-size: 0.66rem;
+  font-size: var(--text-xs);
   letter-spacing: 0.1em;
   text-transform: uppercase;
   cursor: pointer;
@@ -61,7 +61,7 @@
   border-radius: 999px;
   background: var(--accent);
   color: var(--accent-ink);
-  font-size: 0.7rem;
+  font-size: var(--text-xs);
   font-weight: 700;
 }
 

@@ -182,6 +182,20 @@ Component styles are `Component.module.css` beside the component.
 A colour or a tenant name written as a literal in a component is the same bug as
 a component that knows the word `meat`.
 
+**The dashboard's own chrome never draws text in the tenant's colour.** Headings,
+labels, captions, warnings and buttons read `--ui-label`, `--ui-warn` and
+`--ui-muted` — fixed dashboard ink, measured once. `branding.primary` is
+arbitrary client data: demo-butchery's `#7f1d1d` measures 1.87:1 against `--bg`,
+where text needs 4.5:1, and picking a lighter red only moves the problem to the
+next client. The tenant's colour survives on the dashboard as a **surface** —
+the logo tile, a filled button, a border — never as ink. The storefront is the
+opposite and wears the client's colours everywhere, deliberately.
+
+**Two floors, both apps, no exceptions:** 4.5:1 contrast on any text against the
+surface it actually sits on, and `--text-xs` (13px) as the smallest font-size
+anywhere. Opacity counts against the ratio — `--ink` at `0.5` is 4.42:1 and
+fails. Disabled controls are exempt, per WCAG 1.4.3; nothing else is.
+
 ---
 
 ## Open questions — do not guess these

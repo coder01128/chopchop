@@ -16,10 +16,10 @@
 .sectionTitle {
   margin: 0;
   font-family: var(--mono);
-  font-size: 0.7rem;
+  font-size: var(--text-xs);
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--accent);
+  color: var(--ui-label);
 }
 
 .hint {
@@ -39,7 +39,7 @@
 .legend {
   padding: 0 0.35rem;
   font-family: var(--mono);
-  font-size: 0.62rem;
+  font-size: var(--text-xs);
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--ink);
@@ -66,8 +66,8 @@
 }
 
 .chip[data-on] {
-  border-color: var(--accent);
-  color: var(--accent);
+  border-color: var(--ui-label);
+  color: var(--ui-label);
 }
 
 .chip[data-locked] {
@@ -78,7 +78,7 @@
 .retired,
 .saved {
   font-family: var(--mono);
-  font-size: 0.54rem;
+  font-size: var(--text-xs);
   letter-spacing: 0.1em;
   text-transform: uppercase;
   padding: 0.1rem 0.3rem;
@@ -118,7 +118,7 @@
 .bulkField > span,
 .field > span {
   font-family: var(--mono);
-  font-size: 0.58rem;
+  font-size: var(--text-xs);
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--ink);
@@ -141,11 +141,11 @@
   flex: 0 0 auto;
   background: transparent;
   border: 1px solid var(--accent);
-  color: var(--accent);
+  color: var(--ui-label);
   border-radius: var(--radius);
   padding: 0.45rem 0.8rem;
   font-family: var(--mono);
-  font-size: 0.62rem;
+  font-size: var(--text-xs);
   letter-spacing: 0.12em;
   text-transform: uppercase;
   cursor: pointer;
@@ -162,7 +162,7 @@
   display: flex;
   align-items: center;
   gap: 0.45rem;
-  font-size: 0.8rem;
+  font-size: var(--text-sm);
   opacity: 0.85;
   cursor: pointer;
 }
@@ -203,11 +203,11 @@
 
 .cell[data-new] {
   border-style: dashed;
-  border-color: var(--accent);
+  border-color: var(--ui-label);
 }
 
 .cell[data-invalid] {
-  border-color: var(--danger);
+  border-color: var(--ui-warn);
 }
 
 .cellHead {
@@ -224,7 +224,7 @@
 
 .newFlag {
   font-family: var(--mono);
-  font-size: 0.54rem;
+  font-size: var(--text-xs);
   letter-spacing: 0.12em;
   text-transform: uppercase;
   background: var(--accent);
@@ -265,7 +265,7 @@
 
 .moneyInput > span {
   font-family: var(--mono);
-  font-size: 0.78rem;
+  font-size: var(--text-sm);
   opacity: 0.7;
 }
 
@@ -297,8 +297,8 @@
 
 .cellError {
   margin: 0;
-  color: var(--danger);
-  font-size: 0.8rem;
+  color: var(--ui-warn);
+  font-size: var(--text-sm);
 }
 
 /* Retired variants are not an active choice the seller has made, so they sit
@@ -313,7 +313,7 @@
 .retiredTitle {
   margin: 0;
   font-family: var(--mono);
-  font-size: 0.62rem;
+  font-size: var(--text-xs);
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--ink);
@@ -357,11 +357,11 @@
   flex: 0 0 auto;
   background: transparent;
   border: 1px solid var(--accent);
-  color: var(--accent);
+  color: var(--ui-label);
   border-radius: var(--radius);
   padding: 0.32rem 0.7rem;
   font-family: var(--mono);
-  font-size: 0.6rem;
+  font-size: var(--text-xs);
   letter-spacing: 0.12em;
   text-transform: uppercase;
   cursor: pointer;

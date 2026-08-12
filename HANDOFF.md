@@ -81,6 +81,8 @@ It is a shipped-but-dormant build, not a live business being migrated.
 | The secret-key check is key-shaped, not a literal grep | supabase-js's own prefix check puts the literal `sb_secret_` in every bundle. A literal grep fails every build, gets switched off, and leaves no control. Verified in both directions — it passes a clean build and fails an injected key. |
 | `tenants.listed` exists with no directory to feed | So every client from the first is already in the data with an answer they were asked for, rather than a listing appearing later and a client discovering it was done to them. Not granted to `anon`: the grant lands with the surface that justifies it, which is the mistake recorded twice below. |
 | A refused order read renders as "we cannot find that order" | To a buyer, no session and not-your-order are the same fact: this device cannot see it. It was rendering `permission denied for table orders` — Postgres's words in front of a customer. |
+| The dashboard's chrome uses fixed ink, never `branding.primary` | The tenant's colour is arbitrary client data being used as text on a near-black surface. demo-butchery's `#7f1d1d` measured 1.87:1 on `--bg` and 1.00:1 on `--fill2` — the same luminance as the surface. A lighter red just relocates it to the next client. Same reasoning as `branding.labels`: the storefront is the client's brand surface, the dashboard is ours. The brand still shows on the dashboard as a *surface* — logo tile, filled button, border. |
+| `inkOn` compares both inks instead of testing a luminance threshold | The old threshold of 0.4 put light ink on anything below it, and the **default** accent `#c9a227` sits at 0.384 — so every tenant that never set a colour got 2.10:1 on their own logo tile and every primary button. Dark ink on that same gold is 7.37:1. No single threshold avoids this; only comparing the two candidates does. |
 
 ---
 
@@ -160,12 +162,19 @@ Built, not yet committed at the time of writing:
   on `tenants`, and `RUNBOOK.md`. `supabase/config.toml` was corrected —
   see traps.
 
-Remaining to v1: **06B vision import**. Metrics deliberately unscheduled until
-a client has traded.
+- **09** — dashboard legibility. Fixed UI ink (`--ui-label`, `--ui-warn`,
+  `--ui-muted`) and a type floor (`--text-xs` 13px, `--text-sm` 14px) in
+  `theme.css`; 84 text-colour declarations moved off the tenant accent across
+  16 dashboard stylesheets, 91 font sizes raised across both apps. `inkOn`
+  rewritten. **The storefront's own contrast failures are documented and
+  unfixed** — see below.
 
-Test count: 267 across 10 files — tenant-leak, save-product-rpc,
+Remaining to v1: **06B vision import**, and the storefront contrast decision.
+Metrics deliberately unscheduled until a client has traded.
+
+Test count: 277 across 11 files — tenant-leak, save-product-rpc,
 confirm-order-rpc, place-order-rpc, variant-model, order-model,
-storefront-model, storefront-routing, import-model, image-model.
+storefront-model, storefront-routing, import-model, image-model, branding.
 
 Repo: `C:\ccode\git-repos\chopchop`, GitHub `coder01128/chopchop` (private —
 Claude cannot read it; the GitHub connector has been failing). Docs in the root:
@@ -268,6 +277,24 @@ why. The file now mirrors the hosted project. If either is changed, change both.
 directory.** That is what lets npm workspaces resolve `@chopchop/shared`, which
 exports raw `./src/index.ts` and has no build step. A build failing on an
 unresolved `@chopchop/shared` is this setting, not the code.
+
+**The storefront draws prices in the tenant's colour, and for both demo tenants
+that is unreadable.** Ticket 09 fixed the dashboard and was explicitly scoped
+not to change storefront colours, so this stands as measured, not fixed. 16
+rules across 6 stylesheets colour text with `var(--accent)`, including
+`.price`, `.amount` and `.totalAmount` — every price on the shop. Against
+`--bg` that is **1.57:1 for demo-butchery and 1.52:1 for demo-shoes**, where
+4.5:1 is the floor. It is worse than the dashboard bug was: it is the
+customer-facing app, and prices are the text that matters most on it.
+
+The tension is real and needs a decision, not a default. The storefront is
+*meant* to wear the client's colours — that is the product. But a client whose
+brand is a dark red cannot have dark red prices on a near-black page. Three
+ways out, none free: lighten the accent at render time for text use only
+(keeps the brand, changes the colour the client chose); use `--ink` for prices
+and keep the accent for surfaces and the header (safe, less branded); or give
+the storefront a light surface where dark brand colours work. Do not pick one
+in passing — it changes what every client's shop looks like.
 
 **Never suggest**: self-serve signup · reusing ChowNow or Rembrandt code ·
 deferring import · Vercel CLI deploys · commands that print keys · a manifest

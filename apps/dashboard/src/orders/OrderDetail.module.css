@@ -55,7 +55,7 @@
 
 .facts dt {
   font-family: var(--mono);
-  font-size: 0.56rem;
+  font-size: var(--text-xs);
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--ink);
@@ -78,10 +78,10 @@
 .noteLabel {
   display: block;
   font-family: var(--mono);
-  font-size: 0.56rem;
+  font-size: var(--text-xs);
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--accent);
+  color: var(--ui-label);
   margin-bottom: 0.15rem;
 }
 
@@ -90,7 +90,7 @@
   border: 1px solid var(--accent);
   border-radius: var(--radius);
   padding: 0.6rem 0.75rem;
-  color: var(--accent);
+  color: var(--ui-label);
   font-size: 0.85rem;
 }
 
@@ -139,13 +139,13 @@
   gap: 0.5rem;
   margin-top: 0.15rem;
   font-family: var(--mono);
-  font-size: 0.6rem;
+  font-size: var(--text-xs);
   letter-spacing: 0.06em;
   opacity: 0.7;
 }
 
 .adjusted {
-  color: var(--accent);
+  color: var(--ui-label);
   opacity: 1;
 }
 
@@ -158,10 +158,10 @@
 
 .qtyField > span {
   font-family: var(--mono);
-  font-size: 0.56rem;
+  font-size: var(--text-xs);
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--accent);
+  color: var(--ui-label);
 }
 
 .qtyField input {
@@ -187,7 +187,7 @@
 
 .orderTotal > span:first-child {
   font-family: var(--mono);
-  font-size: 0.62rem;
+  font-size: var(--text-xs);
   letter-spacing: 0.14em;
   text-transform: uppercase;
   font-weight: 400;
@@ -197,7 +197,7 @@
 .estimate {
   display: block;
   font-family: var(--mono);
-  font-size: 0.54rem;
+  font-size: var(--text-xs);
   letter-spacing: 0.1em;
   text-transform: uppercase;
   font-weight: 400;
@@ -207,7 +207,7 @@
 
 .error {
   margin: 0;
-  color: var(--danger);
+  color: var(--ui-warn);
   font-size: 0.88rem;
 }
 
@@ -228,7 +228,7 @@
   border-radius: var(--radius);
   padding: 0.6rem 0.9rem;
   font-family: var(--mono);
-  font-size: 0.64rem;
+  font-size: var(--text-xs);
   letter-spacing: 0.12em;
   text-transform: uppercase;
   cursor: pointer;
@@ -251,7 +251,7 @@
 .danger {
   background: transparent;
   border: 1px solid var(--danger);
-  color: var(--danger);
+  color: var(--ui-warn);
 }
 
 .primary:disabled,

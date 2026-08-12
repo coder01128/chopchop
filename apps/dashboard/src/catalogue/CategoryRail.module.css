@@ -15,10 +15,10 @@
 .title {
   margin: 0;
   font-family: var(--mono);
-  font-size: 0.66rem;
+  font-size: var(--text-xs);
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--accent);
+  color: var(--ui-label);
 }
 
 .addButton,
@@ -27,7 +27,7 @@
   border-radius: var(--radius);
   padding: 0.35rem 0.6rem;
   font-family: var(--mono);
-  font-size: 0.6rem;
+  font-size: var(--text-xs);
   letter-spacing: 0.1em;
   text-transform: uppercase;
   cursor: pointer;
@@ -39,13 +39,13 @@
 
 .addButton:hover,
 .miniButton:hover {
-  border-color: var(--accent);
-  color: var(--accent);
+  border-color: var(--ui-label);
+  color: var(--ui-label);
 }
 
 .dangerButton {
-  border-color: var(--danger);
-  color: var(--danger);
+  border-color: var(--ui-warn);
+  color: var(--ui-warn);
 }
 
 .list {
@@ -86,12 +86,16 @@
 
 .entry[data-selected] {
   background: var(--panel2);
-  border-left-color: var(--accent);
-  color: var(--accent);
+  border-left-color: var(--ui-label);
+  color: var(--ui-label);
 }
 
+/* An inactive category is still content the seller reads, not a disabled
+   control, so it does not get a disabled control's exemption from the 4.5:1
+   rule. At 0.5 this measured 4.42:1 on --panel; 0.65 clears every surface and
+   the line-through is what carries the meaning anyway. */
 .entry[data-inactive] .entryName {
-  opacity: 0.5;
+  opacity: 0.65;
   text-decoration: line-through;
 }
 
@@ -104,7 +108,7 @@
 
 .count {
   font-family: var(--mono);
-  font-size: 0.62rem;
+  font-size: var(--text-xs);
   opacity: 0.65;
   flex: 0 0 auto;
 }
@@ -122,15 +126,15 @@
   color: var(--ink);
   opacity: 0.55;
   cursor: pointer;
-  font-size: 0.72rem;
+  font-size: var(--text-xs);
   line-height: 1;
   padding: 0.25rem 0.3rem;
 }
 
 .tool:hover:not(:disabled) {
   opacity: 1;
-  border-color: var(--accent);
-  color: var(--accent);
+  border-color: var(--ui-label);
+  color: var(--ui-label);
 }
 
 .tool:disabled {

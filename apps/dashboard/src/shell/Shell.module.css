@@ -49,7 +49,7 @@
 .email {
   display: none;
   font-family: var(--mono);
-  font-size: 0.66rem;
+  font-size: var(--text-xs);
   letter-spacing: 0.06em;
   color: var(--ink);
   opacity: 0.68;
@@ -62,15 +62,15 @@
   color: var(--ink);
   padding: 0.35rem 0.7rem;
   font-family: var(--mono);
-  font-size: 0.64rem;
+  font-size: var(--text-xs);
   letter-spacing: 0.12em;
   text-transform: uppercase;
   cursor: pointer;
 }
 
 .signOut:hover {
-  border-color: var(--accent);
-  color: var(--accent);
+  border-color: var(--ui-label);
+  color: var(--ui-label);
 }
 
 .content {
@@ -88,13 +88,13 @@
   text-decoration: none;
   color: var(--ink);
   font-family: var(--mono);
-  font-size: 0.66rem;
+  font-size: var(--text-xs);
   letter-spacing: 0.12em;
   text-transform: uppercase;
 }
 
 .navLinkActive {
-  color: var(--accent);
+  color: var(--ui-label);
 }
 
 /* ── under the breakpoint: bottom tab bar ── */
@@ -121,12 +121,12 @@
 .tabbar .navLink {
   flex-direction: column;
   gap: 0.25rem;
-  font-size: 0.58rem;
+  font-size: var(--text-xs);
   border-top: 2px solid transparent;
 }
 
 .tabbar .navLinkActive {
-  border-top-color: var(--accent);
+  border-top-color: var(--ui-label);
   background: var(--panel2);
 }
 
@@ -170,7 +170,7 @@
 
   .rail .navLinkActive {
     background: var(--panel2);
-    border-left-color: var(--accent);
+    border-left-color: var(--ui-label);
   }
 
   .content {

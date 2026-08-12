@@ -38,7 +38,7 @@
   background: transparent;
   padding: 0.35rem 0.7rem;
   font-family: var(--mono);
-  font-size: 0.62rem;
+  font-size: var(--text-xs);
   letter-spacing: 0.12em;
   text-transform: uppercase;
   cursor: pointer;
@@ -58,7 +58,7 @@
 
 .field > span {
   font-family: var(--mono);
-  font-size: 0.62rem;
+  font-size: var(--text-xs);
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--accent);
@@ -83,7 +83,7 @@
   border-top: 1px solid var(--line);
   padding-top: 0.7rem;
   font-family: var(--mono);
-  font-size: 0.68rem;
+  font-size: var(--text-xs);
   letter-spacing: 0.12em;
   text-transform: uppercase;
 }

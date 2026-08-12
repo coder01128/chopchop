@@ -36,7 +36,7 @@
 }
 
 .cardOpen:hover .name {
-  color: var(--accent);
+  color: var(--ui-label);
 }
 
 .thumb {
@@ -65,7 +65,7 @@
 
 .thumbMark {
   font-family: var(--mono);
-  font-size: 0.58rem;
+  font-size: var(--text-xs);
   letter-spacing: 0.12em;
   text-transform: uppercase;
   opacity: 0.65;
@@ -86,7 +86,7 @@
 
 .meta {
   font-family: var(--mono);
-  font-size: 0.6rem;
+  font-size: var(--text-xs);
   letter-spacing: 0.1em;
   text-transform: uppercase;
   opacity: 0.65;
@@ -94,7 +94,7 @@
 
 .price {
   font-size: 0.88rem;
-  color: var(--accent);
+  color: var(--ui-label);
 }
 
 /*
@@ -108,9 +108,9 @@
   border: 1px solid var(--danger);
   border-radius: var(--radius);
   padding: 0.1rem 0.35rem;
-  color: var(--danger);
+  color: var(--ui-warn);
   font-family: var(--mono);
-  font-size: 0.58rem;
+  font-size: var(--text-xs);
   letter-spacing: 0.1em;
   text-transform: uppercase;
 }
@@ -122,7 +122,7 @@
   border-top: 1px solid var(--line);
   padding: 0.45rem 0.7rem;
   font-family: var(--mono);
-  font-size: 0.58rem;
+  font-size: var(--text-xs);
   letter-spacing: 0.1em;
   text-transform: uppercase;
   cursor: pointer;
@@ -157,7 +157,7 @@
   border-radius: var(--radius);
   padding: 0.55rem 0.95rem;
   font-family: var(--mono);
-  font-size: 0.64rem;
+  font-size: var(--text-xs);
   letter-spacing: 0.12em;
   text-transform: uppercase;
   font-weight: 700;

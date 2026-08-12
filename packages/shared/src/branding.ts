@@ -58,20 +58,39 @@ function expandHex(hex: string): [number, number, number] {
   ];
 }
 
-/**
- * Relative luminance, so text on an accent-filled surface stays readable
- * whether the tenant picked oxblood or mustard. CLAUDE.md: on dark backgrounds
- * text is off-white or accent, never grey-on-grey — this is the accent-filled
- * half of that rule.
- */
-export function inkOn(accent: string): string {
-  const [r, g, b] = expandHex(accent).map((channel) => {
+/** WCAG relative luminance. */
+function relativeLuminance(hex: string): number {
+  const [r, g, b] = expandHex(hex).map((channel) => {
     const c = channel / 255;
     return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
   }) as [number, number, number];
 
-  const luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b;
-  return luminance > 0.4 ? INK_DARK : INK_LIGHT;
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+}
+
+/** WCAG 2.1 contrast ratio between two hex colours, 1:1 to 21:1. */
+export function contrastRatio(a: string, b: string): number {
+  const [lighter, darker] = [relativeLuminance(a), relativeLuminance(b)].sort((x, y) => y - x);
+  return (lighter + 0.05) / (darker + 0.05);
+}
+
+/**
+ * Ink for text sitting ON an accent-filled surface — the logo tile, a primary
+ * button — so it stays readable whether the tenant picked oxblood or mustard.
+ *
+ * It picks whichever of the two inks contrasts better, rather than testing
+ * luminance against a fixed threshold. The threshold version chose light ink
+ * for anything under 0.4, and the default accent #c9a227 sits at 0.384 — so
+ * every tenant that had not set `branding.primary` got #f2efe6 on gold at
+ * **2.10:1**, on their own logo tile and every primary button. Dark ink on the
+ * same gold is 7.37:1. Any mid-luminance brand colour — gold, orange, lime —
+ * landed in the same hole, and a threshold cannot be positioned to avoid it:
+ * only comparing the two candidates can.
+ */
+export function inkOn(accent: string): string {
+  return contrastRatio(INK_DARK, accent) >= contrastRatio(INK_LIGHT, accent)
+    ? INK_DARK
+    : INK_LIGHT;
 }
 
 /** Initials for a tenant with no logo. "Demo Butchery" -> "DB". */
