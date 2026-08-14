@@ -121,7 +121,7 @@
   font-size: var(--text-xs);
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--ink);
+  color: var(--surface);
 }
 
 .cardBody {
@@ -139,7 +139,7 @@
 
 .price {
   font-size: 0.9rem;
-  color: var(--accent);
+  color: var(--fg);
 }
 
 @media (min-width: 34rem) {

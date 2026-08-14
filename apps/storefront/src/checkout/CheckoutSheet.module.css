@@ -61,7 +61,7 @@
   font-size: var(--text-xs);
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--accent);
+  color: var(--fg-muted);
 }
 
 .field input,
@@ -94,7 +94,7 @@
   letter-spacing: normal;
   text-transform: none;
   font-weight: 700;
-  color: var(--accent);
+  color: var(--fg);
 }
 
 .error {

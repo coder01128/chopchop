@@ -16,7 +16,7 @@
 
 /* A live order gets the accent; a finished or dismissed one does not. */
 .heading[data-live] {
-  color: var(--accent);
+  color: var(--fg);
 }
 
 .body {
@@ -65,7 +65,7 @@
 
 .amount {
   white-space: nowrap;
-  color: var(--accent);
+  color: var(--fg);
   font-weight: 600;
 }
 
@@ -82,10 +82,10 @@
 
 /* The moment the estimate became real. */
 .weighed {
-  border: 1px solid var(--accent);
+  border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: 0.05rem 0.35rem;
-  color: var(--accent);
+  color: var(--fg);
   text-transform: uppercase;
   letter-spacing: 0.1em;
   font-size: var(--text-xs);
@@ -110,7 +110,7 @@
   letter-spacing: normal;
   text-transform: none;
   font-weight: 700;
-  color: var(--accent);
+  color: var(--fg);
 }
 
 .facts {
@@ -124,7 +124,7 @@
   font-size: var(--text-xs);
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--accent);
+  color: var(--fg-muted);
 }
 
 .facts dd {

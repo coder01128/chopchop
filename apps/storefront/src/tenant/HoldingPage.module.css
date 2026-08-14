@@ -22,7 +22,7 @@
 /* The one accent on the page. Nothing here is a tenant's brand — no tenant
    resolved — so this is the neutral default from theme.css. */
 .mark {
-  color: var(--accent);
+  color: var(--fg);
 }
 
 .body {

@@ -110,7 +110,7 @@
   font-size: var(--text-xs);
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--accent);
+  color: var(--fg-muted);
 }
 
 .options {
@@ -158,7 +158,7 @@
   font-size: var(--text-xs);
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: var(--accent);
+  color: var(--fg-muted);
 }
 
 .qty input {
@@ -185,7 +185,7 @@
 .amount {
   font-size: 1.15rem;
   font-weight: 600;
-  color: var(--accent);
+  color: var(--fg);
 }
 
 .estimate {

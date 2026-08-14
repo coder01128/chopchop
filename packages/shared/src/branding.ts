@@ -104,10 +104,19 @@ export function initialsFor(name: string): string {
 /**
  * Writes the tenant's accent onto the document. Call it once the tenant
  * resolves, and again if it changes (the tenant picker).
+ *
+ * Pass `skipColour` to suppress the inline --accent/--accent-ink write. The
+ * storefront sets this: its palette is fixed in storefront-theme.css and an
+ * inline colour would override it.
  */
-export function applyBranding(branding: TenantBranding | null | undefined): void {
-  const accent = safeAccent(branding?.primary);
-  const root = document.documentElement;
-  root.style.setProperty('--accent', accent);
-  root.style.setProperty('--accent-ink', inkOn(accent));
+export function applyBranding(
+  branding: TenantBranding | null | undefined,
+  opts?: { skipColour?: boolean },
+): void {
+  if (!opts?.skipColour) {
+    const accent = safeAccent(branding?.primary);
+    const root = document.documentElement;
+    root.style.setProperty('--accent', accent);
+    root.style.setProperty('--accent-ink', inkOn(accent));
+  }
 }

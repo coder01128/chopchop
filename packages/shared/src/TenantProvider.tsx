@@ -14,15 +14,17 @@ const TenantContext = createContext<TenantConfig | null>(null);
 export function TenantProvider({
   tenant,
   children,
+  skipColour,
 }: {
   tenant: PublicTenant | TenantRow;
   children: ReactNode;
+  skipColour?: boolean;
 }) {
   const config = useMemo(() => toTenantConfig(tenant), [tenant]);
 
   useEffect(() => {
-    applyBranding(config.branding);
-  }, [config.branding]);
+    applyBranding(config.branding, skipColour ? { skipColour: true } : undefined);
+  }, [config.branding, skipColour]);
 
   return <TenantContext.Provider value={config}>{children}</TenantContext.Provider>;
 }

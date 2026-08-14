@@ -1,0 +1,34 @@
+/*
+ * Light-mode override for the storefront.
+ *
+ * Imported AFTER theme.css so the cascade replaces the shared dark tokens with
+ * a light palette. TenantProvider receives skipColour, so applyBranding() never
+ * writes inline --accent/--accent-ink — these CSS values are authoritative.
+ */
+:root {
+  --surface: #FAF9F7;
+  --surface-raised: #FFFFFF;
+  --fg: #1F1F1F;
+  --fg-muted: #5A5A5A;
+  --border: #E2E0DC;
+
+  --bg: #FAF9F7;
+  --panel: #FFFFFF;
+  --panel2: #FFFFFF;
+  --line: #E2E0DC;
+  --ink: #1F1F1F;
+  --muted: #5A5A5A;
+  --fill: #F0EEEA;
+  --fill2: #E8E6E1;
+
+  --accent: #1F1F1F;
+  --accent-ink: #FAF9F7;
+
+  --danger: #C53030;
+
+  color-scheme: light;
+}
+
+.cc-eyebrow {
+  color: var(--fg-muted);
+}

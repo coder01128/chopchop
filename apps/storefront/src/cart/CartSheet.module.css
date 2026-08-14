@@ -83,7 +83,7 @@
 
 .amount {
   white-space: nowrap;
-  color: var(--accent);
+  color: var(--fg);
   font-weight: 600;
 }
 
@@ -139,7 +139,7 @@
   letter-spacing: normal;
   text-transform: none;
   font-weight: 700;
-  color: var(--accent);
+  color: var(--fg);
 }
 
 .estimateNote {

@@ -75,5 +75,5 @@ export function StorefrontTenantGate({ children }: { children: ReactNode }) {
     );
   }
 
-  return <TenantProvider tenant={state.tenant}>{children}</TenantProvider>;
+  return <TenantProvider tenant={state.tenant} skipColour>{children}</TenantProvider>;
 }
