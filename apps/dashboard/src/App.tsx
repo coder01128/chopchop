@@ -1,5 +1,7 @@
+import { useEffect, useRef, useState } from 'react';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { AuthProvider, useAuth } from './auth/AuthProvider';
+import { DemoBanner } from './auth/DemoBanner';
 import { SignIn } from './auth/SignIn';
 import { TenantGate } from './tenant/TenantGate';
 import { Shell } from './shell/Shell';
@@ -9,33 +11,45 @@ import { OrdersPage } from './orders/OrdersPage';
 import { Settings } from './routes/Settings';
 import { Notice } from './ui/Notice';
 
-/**
- * Route protection is a gate around the whole router rather than a wrapper per
- * route: there is no public dashboard screen, so an unauthenticated visitor
- * reaching *any* path lands on sign-in. A per-route guard invites the one route
- * somebody forgets to wrap.
- */
-function Protected() {
-  const { session, loading } = useAuth();
+const DEMO_EMAIL = 'demo-shoes-owner@example.com';
+const DEMO_PASSWORD = 'chopchop-demo-2026';
 
-  // The gap while the persisted session is read back off the device. Without
-  // this, every reload flashes the sign-in screen before restoring.
+function isDemoRequested(): boolean {
+  return new URLSearchParams(window.location.search).get('demo') === '1';
+}
+
+function Protected() {
+  const { session, loading, signIn } = useAuth();
+  const [demoActive] = useState(isDemoRequested);
+  const attemptedRef = useRef(false);
+
+  useEffect(() => {
+    if (!demoActive || loading || session || attemptedRef.current) return;
+    attemptedRef.current = true;
+    signIn(DEMO_EMAIL, DEMO_PASSWORD);
+  }, [demoActive, loading, session, signIn]);
+
   if (loading) return <Notice title="Loading…" />;
+
+  if (demoActive && !session) return <Notice title="Signing into demo…" />;
+
   if (!session) return <SignIn />;
 
   return (
-    <TenantGate>
-      <Routes>
-        <Route element={<Shell />}>
-          <Route path="/orders" element={<OrdersPage />} />
-          <Route path="/catalogue" element={<CataloguePage />} />
-          <Route path="/import" element={<ImportPage />} />
-          <Route path="/settings" element={<Settings />} />
-          {/* Orders is the default landing screen — wireframe section 01. */}
-          <Route path="*" element={<Navigate to="/orders" replace />} />
-        </Route>
-      </Routes>
-    </TenantGate>
+    <>
+      {demoActive && <DemoBanner />}
+      <TenantGate>
+        <Routes>
+          <Route element={<Shell />}>
+            <Route path="/orders" element={<OrdersPage />} />
+            <Route path="/catalogue" element={<CataloguePage />} />
+            <Route path="/import" element={<ImportPage />} />
+            <Route path="/settings" element={<Settings />} />
+            <Route path="*" element={<Navigate to="/orders" replace />} />
+          </Route>
+        </Routes>
+      </TenantGate>
+    </>
   );
 }
 
