@@ -8,3 +8,6 @@ dist
 # Throwaway spreadsheets for exercising the import file picker by hand. Demo
 # data, not fixtures — the import tests build their own files in memory.
 samples
+
+# Claude Code local config
+.claude/
