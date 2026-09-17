@@ -7,6 +7,12 @@
   grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));
 }
 
+@media (min-width: 52rem) {
+  .grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
 .card {
   height: 100%;
   display: flex;

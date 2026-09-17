@@ -50,14 +50,72 @@
   color: var(--ui-label);
 }
 
-.filePicker input {
-  width: 100%;
-  border: 1px dashed var(--line);
+.dropZone {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  min-height: 12rem;
+  border: 2px dashed var(--line);
   border-radius: var(--radius);
-  padding: 0.8rem;
   background: var(--bg);
-  color: var(--ink);
+  padding: 2rem 1.5rem;
   cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.dropZone:hover {
+  border-color: var(--ui-muted);
+}
+
+.dropZone[data-active] {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 8%, var(--bg));
+}
+
+.dropIcon {
+  font-size: 2.4rem;
+  line-height: 1;
+  opacity: 0.7;
+}
+
+.dropZone[data-active] .dropIcon {
+  opacity: 1;
+}
+
+.dropTitle {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--ui-label);
+}
+
+.dropHint {
+  font-size: 0.85rem;
+  opacity: 0.65;
+}
+
+.dropHint code {
+  font-family: var(--mono);
+  font-size: 0.85em;
+  color: var(--ui-label);
+}
+
+.hiddenInput {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.busyNote {
+  margin: 0;
+  font-size: 0.88rem;
+  opacity: 0.7;
+  text-align: center;
 }
 
 .summary {

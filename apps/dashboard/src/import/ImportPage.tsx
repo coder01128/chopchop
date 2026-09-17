@@ -53,11 +53,33 @@ export function ImportPage() {
   const [stage, setStage] = useState<Stage>({ name: 'pick' });
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [dragging, setDragging] = useState(false);
+  const dragCount = useRef(0);
 
-  // stock_mode lives on the tenant row. `save_product` reads it there too and
-  // ignores any stock figure sent by an availability business, so this decides
-  // what the screens say, never what the database does.
   const options = { trackStock: tenant.stockMode === 'counted' };
+
+  function onDragEnter(e: React.DragEvent) {
+    e.preventDefault();
+    dragCount.current += 1;
+    if (dragCount.current === 1) setDragging(true);
+  }
+
+  function onDragLeave(e: React.DragEvent) {
+    e.preventDefault();
+    dragCount.current -= 1;
+    if (dragCount.current <= 0) {
+      dragCount.current = 0;
+      setDragging(false);
+    }
+  }
+
+  function onDrop(e: React.DragEvent) {
+    e.preventDefault();
+    dragCount.current = 0;
+    setDragging(false);
+    const file = e.dataTransfer.files[0];
+    if (file) void onFile(file);
+  }
 
   function reset() {
     setStage({ name: 'pick' });
@@ -159,25 +181,45 @@ export function ImportPage() {
 
       {stage.name === 'pick' && (
         <div className={styles.pick}>
-          <p className={styles.blurb}>
-            A price list as a spreadsheet — <code>.csv</code> or <code>.xlsx</code>. The first row is
-            read as the column headings. The file is read on this device and never uploaded.
-          </p>
-          <p className={styles.blurb}>
-            Nothing is written until you have seen every change on the review screen. An import never
-            removes a product, whatever is missing from the file.
-          </p>
-          <label className={styles.filePicker}>
-            <span className="cc-visually-hidden">Choose a spreadsheet</span>
+          <div
+            className={styles.dropZone}
+            data-active={dragging || undefined}
+            onDragEnter={onDragEnter}
+            onDragLeave={onDragLeave}
+            onDragOver={(e) => e.preventDefault()}
+            onDrop={onDrop}
+            onClick={() => fileInput.current?.click()}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                fileInput.current?.click();
+              }
+            }}
+          >
             <input
               ref={fileInput}
               type="file"
               accept={ACCEPTED_FILE_TYPES}
               disabled={busy}
+              className={styles.hiddenInput}
               onChange={(event) => void onFile(event.target.files?.[0])}
             />
-          </label>
-          {busy && <p className={styles.blurb}>Reading the file…</p>}
+            <span className={styles.dropIcon}>&#128196;</span>
+            <span className={styles.dropTitle}>
+              {dragging ? 'Drop your file here' : 'Drag a spreadsheet here'}
+            </span>
+            <span className={styles.dropHint}>
+              or click to browse — <code>.csv</code>, <code>.xlsx</code>, <code>.xls</code>
+            </span>
+          </div>
+
+          <p className={styles.blurb}>
+            The first row is read as column headings. The file stays on this device and is never
+            uploaded. Nothing is written until you review every change.
+          </p>
+          {busy && <p className={styles.busyNote}>Reading the file…</p>}
         </div>
       )}
 

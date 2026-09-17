@@ -56,12 +56,19 @@ export function CataloguePage() {
 
   const visible = useMemo(() => {
     const term = search.trim().toLowerCase();
-    return items.filter((summary) => {
+    const filtered = items.filter((summary) => {
       if (categoryId !== null && summary.item.category_id !== categoryId) return false;
       if (term && !summary.item.name.toLowerCase().includes(term)) return false;
       return true;
     });
-  }, [items, categoryId, search]);
+
+    const catOrder = new Map(categories.map((cat, i) => [cat.id, i]));
+    return filtered.sort((a, b) => {
+      const aIdx = a.item.category_id ? catOrder.get(a.item.category_id) ?? Infinity : Infinity;
+      const bIdx = b.item.category_id ? catOrder.get(b.item.category_id) ?? Infinity : Infinity;
+      return aIdx - bIdx;
+    });
+  }, [items, categories, categoryId, search]);
 
   async function toggleActive(summary: ItemSummary) {
     // Optimistic: the toggle is the most-pressed control on the screen and a
