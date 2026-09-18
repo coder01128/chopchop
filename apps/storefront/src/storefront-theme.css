@@ -26,7 +26,15 @@
 
   --danger: #C53030;
 
+  --header-h: calc(49px + 1.8rem + 1px);
+
   color-scheme: light;
+}
+
+@media (min-width: 40rem) {
+  :root {
+    --header-h: calc(49px + 2.2rem + 1px);
+  }
 }
 
 .cc-eyebrow {

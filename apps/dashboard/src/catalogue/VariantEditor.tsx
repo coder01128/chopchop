@@ -37,6 +37,7 @@ export function VariantEditor({
   lockedAttributes,
   retired,
   onRestore,
+  orderedByVariant,
 }: {
   palette: TenantAttribute[];
   shape: ProductShape;
@@ -52,6 +53,7 @@ export function VariantEditor({
   /** Removed, but kept because they appear in order history. */
   retired: VariantRecord[];
   onRestore: (variant: VariantRecord) => void;
+  orderedByVariant: Record<string, number>;
 }) {
   const cells = useMemo(() => activeCells(shape, store), [shape, store]);
   const tracksStock = stockMode === 'counted';
@@ -249,6 +251,12 @@ export function VariantEditor({
                         placeholder="0"
                         onChange={(event) => updateCell(cell, { stock: event.target.value })}
                       />
+                      {cell.variantId != null && (
+                        <span className={styles.stockRatio}>
+                          {cell.stock || '0'}{' / '}
+                          {Math.round(Number(cell.stock || 0) + (orderedByVariant[cell.variantId] ?? 0))}
+                        </span>
+                      )}
                     </label>
                   ) : (
                     <label className={styles.toggleField}>

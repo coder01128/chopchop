@@ -49,13 +49,22 @@ export function CartSheet({ onClose, onCheckout }: { onClose: () => void; onChec
                         type="number"
                         inputMode={tenant.saleMode === 'weight' ? 'decimal' : 'numeric'}
                         min={tenant.saleMode === 'weight' ? '0.001' : '1'}
+                        max={tenant.stockMode === 'counted' ? line.stock : undefined}
                         step={quantityStep(tenant.saleMode)}
                         value={formatQty(line.qty, tenant.saleMode)}
                         onChange={(event) => {
                           const next = parseQty(event.target.value, tenant.saleMode);
-                          if (next !== null) cart.setQty(line.variantId, next);
+                          if (next === null) return;
+                          const capped =
+                            tenant.stockMode === 'counted'
+                              ? Math.min(next, line.stock)
+                              : next;
+                          cart.setQty(line.variantId, capped);
                         }}
                       />
+                      {tenant.stockMode === 'counted' && (
+                        <span className={styles.stockHint}>{line.stock} available</span>
+                      )}
                     </label>
                     <span className={styles.unitPrice}>× {money.format(line.price)}</span>
                     <button

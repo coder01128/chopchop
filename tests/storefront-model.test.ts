@@ -20,6 +20,7 @@ import {
   readsAsNotOurs,
   plainMoney,
   quantityStep,
+  remainingStock,
   selectorsFor,
   setLineQty,
   showsWeighedQuantity,
@@ -70,8 +71,8 @@ describe('quantities', () => {
 });
 
 describe('cart arithmetic', () => {
-  const chops: CartLine = { variantId: 'v1', name: 'Lamb Chops — per kg', price: 259.9, qty: 1.5 };
-  const wors: CartLine = { variantId: 'v2', name: 'Boerewors — per pack', price: 59.95, qty: 2 };
+  const chops: CartLine = { variantId: 'v1', name: 'Lamb Chops — per kg', price: 259.9, qty: 1.5, stock: 10 };
+  const wors: CartLine = { variantId: 'v2', name: 'Boerewors — per pack', price: 59.95, qty: 2, stock: 20 };
 
   it('rounds each line to cents', () => {
     expect(lineTotal(chops)).toBe(389.85);
@@ -92,6 +93,20 @@ describe('cart arithmetic', () => {
 
   it('sets a line quantity outright', () => {
     expect(setLineQty([chops, wors], 'v2', 5)[1].qty).toBe(5);
+  });
+});
+
+describe('remaining stock', () => {
+  it('caps at stock minus what is in the cart on a counted tenant', () => {
+    expect(remainingStock(4, 3, 'counted')).toBe(1);
+    expect(remainingStock(4, 0, 'counted')).toBe(4);
+    expect(remainingStock(4, 4, 'counted')).toBe(0);
+    expect(remainingStock(4, 6, 'counted')).toBe(0);
+  });
+
+  it('returns null for an availability tenant — no cap', () => {
+    expect(remainingStock(0, 0, 'availability')).toBeNull();
+    expect(remainingStock(99, 5, 'availability')).toBeNull();
   });
 });
 

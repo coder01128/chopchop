@@ -287,6 +287,13 @@
   outline-offset: 1px;
 }
 
+.stockRatio {
+  font-size: var(--text-sm);
+  color: var(--ui-muted);
+  letter-spacing: normal;
+  text-transform: none;
+}
+
 .toggleField {
   display: flex;
   align-items: center;

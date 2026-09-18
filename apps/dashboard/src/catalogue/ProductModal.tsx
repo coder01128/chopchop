@@ -3,6 +3,7 @@ import { getSupabaseClient, useTenant } from '@chopchop/shared';
 import {
   classifyVariants,
   describeAge,
+  loadOrderedQuantities,
   loadVariants,
   saveProduct,
   type CategoryRow,
@@ -81,6 +82,7 @@ export function ProductModal({
   const [store, setStore] = useState<CellStore>({});
   const [original, setOriginal] = useState<CellStore>({});
   const [retired, setRetired] = useState<VariantRecord[]>([]);
+  const [orderedByVariant, setOrderedByVariant] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [showErrors, setShowErrors] = useState(false);
@@ -100,6 +102,7 @@ export function ProductModal({
         setStore({});
         setOriginal({});
         setRetired([]);
+        setOrderedByVariant({});
         setLoading(false);
         return;
       }
@@ -129,6 +132,11 @@ export function ProductModal({
         // choice the seller currently has made, so they render as their own
         // block rather than as ticked values.
         setRetired(retiredVariants(variants));
+
+        const activeIds = variants.filter((v) => !v.retiredAt).map((v) => v.id);
+        const ordered = await loadOrderedQuantities(client, activeIds);
+        if (!active) return;
+        setOrderedByVariant(ordered);
       } catch (error) {
         if (active) setFailure(error instanceof Error ? error.message : String(error));
       } finally {
@@ -371,6 +379,7 @@ export function ProductModal({
               errors={showErrors ? errors : []}
               lockedAttributes={lockedAttributes}
               retired={retired}
+              orderedByVariant={orderedByVariant}
               onRestore={(variant) => {
                 const next = restoreVariant(shape, store, variant, tenant.attributeSchema);
                 setShape(next.shape);

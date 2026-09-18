@@ -93,6 +93,12 @@
   gap: 0.6rem;
 }
 
+.qty {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
 .qty input {
   width: 5.5rem;
   border: 1px solid var(--line);
@@ -100,6 +106,13 @@
   background: var(--bg);
   padding: 0.45rem 0.5rem;
   color: var(--ink);
+}
+
+.stockHint {
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: var(--fg-muted);
+  letter-spacing: 0.04em;
 }
 
 .unitPrice {

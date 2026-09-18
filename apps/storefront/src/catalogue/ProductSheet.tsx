@@ -7,6 +7,7 @@ import {
   money,
   parseQty,
   quantityStep,
+  remainingStock,
   selectorsFor,
   totalIsEstimate,
   variantLabel,
@@ -62,6 +63,15 @@ export function ProductSheet({
   const imageSrc = resolveImageUrl(getSupabaseUrl(), item, variant);
   const soldOut = variant ? isSoldOut(variant, tenant.stockMode) : false;
   const qty = parseQty(qtyText, tenant.saleMode);
+
+  const inCart = variant
+    ? cart.lines.find((l) => l.variantId === variant.id)?.qty ?? 0
+    : 0;
+  const remaining = variant
+    ? remainingStock(variant.stock, inCart, tenant.stockMode)
+    : null;
+  const maxQty = remaining !== null ? Math.max(0, remaining) : undefined;
+  const atLimit = remaining !== null && remaining <= 0 && !soldOut;
 
   const decimal = tenant.saleMode === 'weight';
   const attributeLabel = (name: string) =>
@@ -148,10 +158,20 @@ export function ProductSheet({
               type="number"
               inputMode={decimal ? 'decimal' : 'numeric'}
               min={decimal ? '0.001' : '1'}
+              max={maxQty}
               step={quantityStep(tenant.saleMode)}
               value={qtyText}
               onChange={(event) => setQtyText(event.target.value)}
             />
+            {remaining !== null && variant && !soldOut && (
+              <span className={styles.stockHint}>
+                {remaining <= 0
+                  ? 'All in cart'
+                  : inCart > 0
+                    ? `${remaining} more available`
+                    : `${variant.stock} available`}
+              </span>
+            )}
           </label>
 
           <p className={styles.linePrice}>
@@ -173,24 +193,29 @@ export function ProductSheet({
         <button
           type="button"
           className={styles.add}
-          disabled={!variant || soldOut || qty === null}
+          disabled={!variant || soldOut || atLimit || qty === null}
           onClick={() => {
             if (!variant || qty === null) return;
+            const capped = maxQty !== undefined ? Math.min(qty, maxQty) : qty;
+            if (capped <= 0) return;
             const label = variantLabel(variant.attributes, paletteOrder);
             cart.add({
               variantId: variant.id,
               name: label ? `${item.name} — ${label}` : item.name,
               price: variant.price,
-              qty,
+              qty: capped,
+              stock: variant.stock,
             });
             onAdded();
           }}
         >
           {soldOut
             ? 'Sold out'
-            : complete
-              ? `Add to ${tenant.label('cart', 'cart')}`
-              : 'Choose an option'}
+            : atLimit
+              ? 'All in cart'
+              : complete
+                ? `Add to ${tenant.label('cart', 'cart')}`
+                : 'Choose an option'}
         </button>
       </div>
     </div>

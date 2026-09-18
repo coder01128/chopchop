@@ -183,6 +183,8 @@ export interface CartLine {
   name: string;
   price: number;
   qty: number;
+  /** Snapshot of variant.stock at add-time, used for UI capping on counted tenants. */
+  stock: number;
 }
 
 /** Rounded to cents, because that is what the column holds. */
@@ -208,9 +210,22 @@ export function addLine(lines: CartLine[], line: CartLine): CartLine[] {
   if (!existing) return [...lines, line];
   return lines.map((entry) =>
     entry.variantId === line.variantId
-      ? { ...entry, qty: Number((entry.qty + line.qty).toFixed(3)) }
+      ? { ...entry, qty: Number((entry.qty + line.qty).toFixed(3)), stock: line.stock }
       : entry,
   );
+}
+
+/**
+ * How many more a buyer can order of this variant, given what is already in
+ * their cart. Returns `null` when the tenant's stock mode imposes no limit.
+ */
+export function remainingStock(
+  variantStock: number,
+  inCart: number,
+  stockMode: StockMode,
+): number | null {
+  if (stockMode !== 'counted') return null;
+  return Math.max(0, variantStock - inCart);
 }
 
 export function removeLine(lines: CartLine[], variantId: string): CartLine[] {

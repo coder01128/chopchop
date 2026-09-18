@@ -70,31 +70,33 @@ export function CataloguePage({ onOpen }: { onOpen: (item: StorefrontItem) => vo
 
   return (
     <section className={styles.page}>
-      <h1 className={styles.heading}>{tenant.label('catalogue', 'Catalogue')}</h1>
+      <div className={styles.stickyNav}>
+        <h1 className={styles.heading}>{tenant.label('catalogue', 'Catalogue')}</h1>
 
-      {catalogue.categories.length > 0 && (
-        <nav className={styles.rail} aria-label={tenant.label('catalogue', 'Catalogue')}>
-          <button
-            type="button"
-            className={styles.chip}
-            data-on={categoryId === null || undefined}
-            onClick={() => setCategoryId(null)}
-          >
-            All
-          </button>
-          {catalogue.categories.map((category) => (
+        {catalogue.categories.length > 0 && (
+          <nav className={styles.rail} aria-label={tenant.label('catalogue', 'Catalogue')}>
             <button
-              key={category.id}
               type="button"
               className={styles.chip}
-              data-on={categoryId === category.id || undefined}
-              onClick={() => setCategoryId(category.id)}
+              data-on={categoryId === null || undefined}
+              onClick={() => setCategoryId(null)}
             >
-              {category.name}
+              All
             </button>
-          ))}
-        </nav>
-      )}
+            {catalogue.categories.map((category) => (
+              <button
+                key={category.id}
+                type="button"
+                className={styles.chip}
+                data-on={categoryId === category.id || undefined}
+                onClick={() => setCategoryId(category.id)}
+              >
+                {category.name}
+              </button>
+            ))}
+          </nav>
+        )}
+      </div>
 
       {visible.length === 0 ? (
         <p className={styles.empty}>Nothing here yet.</p>

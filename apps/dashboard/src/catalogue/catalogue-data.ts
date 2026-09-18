@@ -112,6 +112,35 @@ export async function loadVariants(
   }));
 }
 
+/**
+ * SUM(qty) per variant across non-cancelled orders.
+ *
+ * Used to show "Remaining / Total" on the stock field: total = current stock +
+ * ordered. No new columns — derived from order_items at read time.
+ */
+export async function loadOrderedQuantities(
+  client: ChopChopClient,
+  variantIds: string[],
+): Promise<Record<string, number>> {
+  const result: Record<string, number> = {};
+  if (variantIds.length === 0) return result;
+
+  const { data, error } = await client
+    .from('order_items')
+    .select('variant_id, qty, orders!inner(status)')
+    .in('variant_id', variantIds);
+
+  if (error) throw new Error(`Could not load ordered quantities: ${error.message}`);
+
+  for (const line of data ?? []) {
+    const order = line.orders as unknown as { status: OrderStatus };
+    if (order.status === 'cancelled') continue;
+    result[line.variant_id] = (result[line.variant_id] ?? 0) + Number(line.qty);
+  }
+
+  return result;
+}
+
 export type RemovalVerdict = 'deletable' | 'retire-only' | 'blocked';
 
 /** An order standing in the way of a removal, named so the seller can go and deal with it. */

@@ -6,6 +6,15 @@
   gap: 0.9rem;
 }
 
+.stickyNav {
+  position: sticky;
+  top: var(--header-h, 3.8rem);
+  z-index: 5;
+  background: var(--bg);
+  margin: 0 -1rem;
+  padding: 0 1rem 0.35rem;
+}
+
 .heading {
   margin: 0;
   font-size: 1.4rem;
@@ -70,7 +79,7 @@
   display: flex;
   flex-direction: column;
   gap: 0;
-  border: 1px solid var(--line);
+  border: 1px solid var(--fg, #1F1F1F);
   border-radius: var(--radius);
   background: var(--panel);
   padding: 0;
@@ -78,6 +87,12 @@
   text-align: left;
   overflow: hidden;
   cursor: pointer;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+
+.card:active {
+  transform: scale(0.97);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
 }
 
 .card[data-sold-out] {
@@ -149,5 +164,12 @@
 
   .heading {
     font-size: 1.7rem;
+  }
+}
+
+@media (min-width: 40rem) {
+  .stickyNav {
+    margin: 0 -1.5rem;
+    padding: 0 1.5rem 0.35rem;
   }
 }
