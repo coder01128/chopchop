@@ -28,11 +28,9 @@ import styles from './ProductSheet.module.css';
 export function ProductSheet({
   item,
   onClose,
-  onAdded,
 }: {
   item: StorefrontItem;
   onClose: () => void;
-  onAdded: () => void;
 }) {
   const tenant = useTenant();
   const cart = useCart();
@@ -54,6 +52,7 @@ export function ProductSheet({
     ),
   );
   const [qtyText, setQtyText] = useState(tenant.saleMode === 'weight' ? '1' : '1');
+  const [addedQty, setAddedQty] = useState<number | null>(null);
 
   const complete = selectors.every((selector) => chosen[selector.name] !== undefined);
   const variant = complete ? matchVariant(item.variants, chosen) : null;
@@ -138,7 +137,10 @@ export function ProductSheet({
                     className={styles.option}
                     data-on={chosen[selector.name] === value || undefined}
                     data-out={!orderable || undefined}
-                    onClick={() => setChosen((current) => ({ ...current, [selector.name]: value }))}
+                    onClick={() => {
+                      setChosen((current) => ({ ...current, [selector.name]: value }));
+                      setAddedQty(null);
+                    }}
                   >
                     {value}
                   </button>
@@ -162,6 +164,7 @@ export function ProductSheet({
                   const min = decimal ? 0.5 : 1;
                   const next = Math.max(min, cur - step);
                   setQtyText(String(decimal ? Number(next.toFixed(3)) : next));
+                  setAddedQty(null);
                 }}
               >
                 −
@@ -173,7 +176,10 @@ export function ProductSheet({
                 max={maxQty}
                 step={quantityStep(tenant.saleMode)}
                 value={qtyText}
-                onChange={(event) => setQtyText(event.target.value)}
+                onChange={(event) => {
+                  setQtyText(event.target.value);
+                  setAddedQty(null);
+                }}
               />
               <button
                 type="button"
@@ -185,6 +191,7 @@ export function ProductSheet({
                   const next = cur + step;
                   const capped = maxQty !== undefined ? Math.min(next, maxQty) : next;
                   setQtyText(String(decimal ? Number(capped.toFixed(3)) : capped));
+                  setAddedQty(null);
                 }}
               >
                 +
@@ -233,16 +240,19 @@ export function ProductSheet({
               qty: capped,
               stock: variant.stock,
             });
-            onAdded();
+            setAddedQty(capped);
           }}
+          data-added={addedQty !== null || undefined}
         >
-          {soldOut
-            ? 'Sold out'
-            : atLimit
-              ? 'All in cart'
-              : complete
-                ? `Add to ${tenant.label('cart', 'cart')}`
-                : 'Choose an option'}
+          {addedQty !== null
+            ? `${addedQty} added to ${tenant.label('cart', 'cart')}`
+            : soldOut
+              ? 'Sold out'
+              : atLimit
+                ? 'All in cart'
+                : complete
+                  ? `Add to ${tenant.label('cart', 'cart')}`
+                  : 'Choose an option'}
         </button>
 
         <button type="button" className={styles.continueShopping} onClick={onClose}>

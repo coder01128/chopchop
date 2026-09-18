@@ -149,7 +149,6 @@ function Shopfront() {
         <ProductSheet
           item={sheet.item}
           onClose={() => setSheet({ kind: 'none' })}
-          onAdded={() => setSheet({ kind: 'cart' })}
         />
       )}
 

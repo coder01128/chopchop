@@ -245,6 +245,12 @@
   cursor: pointer;
 }
 
+.add[data-added] {
+  border-color: var(--line);
+  background: var(--panel2);
+  color: var(--fg);
+}
+
 .add:disabled {
   border-color: var(--line);
   background: var(--fill);
