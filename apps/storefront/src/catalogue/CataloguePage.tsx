@@ -44,13 +44,19 @@ export function CataloguePage({ onOpen }: { onOpen: (item: StorefrontItem) => vo
     };
   }, [client, tenant.id]);
 
-  const visible = useMemo(
-    () =>
+  const visible = useMemo(() => {
+    const filtered =
       categoryId === null
         ? catalogue.items
-        : catalogue.items.filter((item) => item.categoryId === categoryId),
-    [catalogue.items, categoryId],
-  );
+        : catalogue.items.filter((item) => item.categoryId === categoryId);
+
+    const catOrder = new Map(catalogue.categories.map((cat, i) => [cat.id, i]));
+    return [...filtered].sort((a, b) => {
+      const aIdx = a.categoryId ? catOrder.get(a.categoryId) ?? Infinity : Infinity;
+      const bIdx = b.categoryId ? catOrder.get(b.categoryId) ?? Infinity : Infinity;
+      return aIdx - bIdx;
+    });
+  }, [catalogue.items, catalogue.categories, categoryId]);
 
   if (loading) return <p className={styles.loading}>Loading…</p>;
 

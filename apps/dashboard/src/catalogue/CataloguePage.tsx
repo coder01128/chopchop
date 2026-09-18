@@ -70,6 +70,27 @@ export function CataloguePage() {
     });
   }, [items, categories, categoryId, search]);
 
+  async function reorderItems(fromIndex: number, toIndex: number) {
+    const reordered = [...visible];
+    const [moved] = reordered.splice(fromIndex, 1);
+    reordered.splice(toIndex, 0, moved);
+
+    for (let i = 0; i < reordered.length; i++) {
+      if (reordered[i].item.sort_order !== i) {
+        const { error: reorderError } = await client
+          .from('items')
+          .update({ sort_order: i })
+          .eq('id', reordered[i].item.id);
+        if (reorderError) {
+          setError(`Could not reorder: ${reorderError.message}`);
+          void refresh();
+          return;
+        }
+      }
+    }
+    void refresh();
+  }
+
   async function toggleActive(summary: ItemSummary) {
     // Optimistic: the toggle is the most-pressed control on the screen and a
     // round trip per press makes it feel broken.
@@ -141,6 +162,7 @@ export function CataloguePage() {
               onEdit={(summary) => setModal({ open: true, item: summary })}
               onToggleActive={(summary) => void toggleActive(summary)}
               onAdd={() => setModal({ open: true, item: null })}
+              onReorder={(from, to) => void reorderItems(from, to)}
             />
           )}
         </div>

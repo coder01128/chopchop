@@ -113,6 +113,39 @@
   flex: 0 0 auto;
 }
 
+.grip {
+  flex: 0 0 auto;
+  background: transparent;
+  border: none;
+  color: var(--ink);
+  opacity: 0.4;
+  cursor: grab;
+  font-size: 1.1rem;
+  line-height: 1;
+  padding: 0.3rem 0.2rem;
+  touch-action: none;
+}
+
+.grip:hover {
+  opacity: 0.8;
+}
+
+.grip:active {
+  cursor: grabbing;
+}
+
+.entryRow[data-dragging] {
+  opacity: 0.4;
+}
+
+.entryRow[data-drag-over='above'] {
+  box-shadow: 0 -2px 0 0 var(--accent);
+}
+
+.entryRow[data-drag-over='below'] {
+  box-shadow: 0 2px 0 0 var(--accent);
+}
+
 .entryTools {
   display: flex;
   gap: 0.35rem;

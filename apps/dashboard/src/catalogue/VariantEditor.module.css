@@ -192,7 +192,7 @@
 }
 
 .cell {
-  border: 1px solid var(--line);
+  border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--line));
   border-radius: var(--radius);
   padding: 0.7rem 0.8rem;
   background: var(--bg);

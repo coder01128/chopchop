@@ -17,7 +17,7 @@
   height: 100%;
   display: flex;
   flex-direction: column;
-  border: 1px solid var(--line);
+  border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--line));
   border-radius: var(--radius);
   background: var(--panel);
   overflow: hidden;
@@ -26,6 +26,15 @@
 .card[data-inactive] {
   opacity: 0.62;
   border-style: dashed;
+}
+
+.card[data-dragging] {
+  opacity: 0.35;
+}
+
+.dragOver {
+  box-shadow: 0 0 0 2px var(--accent);
+  border-radius: var(--radius);
 }
 
 .cardOpen {

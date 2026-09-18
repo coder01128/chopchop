@@ -1,3 +1,4 @@
+import { useRef, useState } from 'react';
 import { getSupabaseUrl, resolveImageUrl } from '@chopchop/shared';
 import type { ItemSummary } from './catalogue-data';
 import styles from './ItemGrid.module.css';
@@ -20,14 +21,17 @@ export function ItemGrid({
   onEdit,
   onToggleActive,
   onAdd,
+  onReorder,
 }: {
   items: ItemSummary[];
-  /** Distinguishes "no products yet" from "nothing matched the filter". */
   hasAnyItems: boolean;
   onEdit: (summary: ItemSummary) => void;
   onToggleActive: (summary: ItemSummary) => void;
   onAdd: () => void;
+  onReorder?: (fromIndex: number, toIndex: number) => void;
 }) {
+  const dragIdx = useRef<number | null>(null);
+  const [dragOverIdx, setDragOverIdx] = useState<number | null>(null);
   if (items.length === 0) {
     return (
       <div className={styles.empty}>
@@ -54,9 +58,38 @@ export function ItemGrid({
 
   return (
     <ul className={styles.grid}>
-      {items.map((summary) => (
-        <li key={summary.item.id}>
-          <article className={styles.card} data-inactive={summary.item.active ? undefined : true}>
+      {items.map((summary, idx) => (
+        <li
+          key={summary.item.id}
+          className={dragOverIdx === idx ? styles.dragOver : undefined}
+          draggable={!!onReorder}
+          onDragStart={(e) => {
+            dragIdx.current = idx;
+            e.dataTransfer.effectAllowed = 'move';
+          }}
+          onDragEnd={() => {
+            dragIdx.current = null;
+            setDragOverIdx(null);
+          }}
+          onDragOver={(e) => {
+            e.preventDefault();
+            setDragOverIdx(idx);
+          }}
+          onDragLeave={() => setDragOverIdx(null)}
+          onDrop={(e) => {
+            e.preventDefault();
+            setDragOverIdx(null);
+            if (dragIdx.current !== null && dragIdx.current !== idx && onReorder) {
+              onReorder(dragIdx.current, idx);
+            }
+            dragIdx.current = null;
+          }}
+        >
+          <article
+            className={styles.card}
+            data-inactive={summary.item.active ? undefined : true}
+            data-dragging={dragIdx.current === idx || undefined}
+          >
             <button type="button" className={styles.cardOpen} onClick={() => onEdit(summary)}>
               {/* A missing photo is a neutral block, never a broken image —
                   most clients upload photos late or never. */}

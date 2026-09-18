@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { getSupabaseClient, useTenant } from '@chopchop/shared';
 import type { CategoryRow, ItemSummary } from './catalogue-data';
 import styles from './CategoryRail.module.css';
@@ -31,6 +31,8 @@ export function CategoryRail({
   const [renameValue, setRenameValue] = useState('');
   const [pendingDelete, setPendingDelete] = useState<CategoryRow | null>(null);
   const [busy, setBusy] = useState(false);
+  const [dragOverId, setDragOverId] = useState<string | null>(null);
+  const dragIdx = useRef<number | null>(null);
 
   function countIn(categoryId: string): number {
     return items.filter((entry) => entry.item.category_id === categoryId).length;
@@ -105,6 +107,30 @@ export function CategoryRail({
     onChanged();
   }
 
+  async function dropCategory(fromIndex: number, toIndex: number) {
+    if (fromIndex === toIndex) return;
+    const reordered = [...categories];
+    const [moved] = reordered.splice(fromIndex, 1);
+    reordered.splice(toIndex, 0, moved);
+
+    setBusy(true);
+    for (let i = 0; i < reordered.length; i++) {
+      if (reordered[i].sort_order !== i) {
+        const { error } = await client
+          .from('categories')
+          .update({ sort_order: i })
+          .eq('id', reordered[i].id);
+        if (error) {
+          onError(`Could not reorder: ${error.message}`);
+          setBusy(false);
+          return;
+        }
+      }
+    }
+    setBusy(false);
+    onChanged();
+  }
+
   async function toggleActive(category: CategoryRow) {
     await run(async () => {
       const { error } = await client
@@ -167,7 +193,39 @@ export function CategoryRail({
                 </button>
               </div>
             ) : (
-              <div className={styles.entryRow}>
+              <div
+                className={styles.entryRow}
+                data-dragging={dragIdx.current === index || undefined}
+                data-drag-over={dragOverId === category.id ? (dragIdx.current !== null && index > dragIdx.current ? 'below' : 'above') : undefined}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  setDragOverId(category.id);
+                }}
+                onDragLeave={() => setDragOverId(null)}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  setDragOverId(null);
+                  if (dragIdx.current !== null && dragIdx.current !== index) {
+                    void dropCategory(dragIdx.current, index);
+                  }
+                  dragIdx.current = null;
+                }}
+              >
+                <span
+                  className={styles.grip}
+                  draggable
+                  title="Drag to reorder"
+                  onDragStart={(e) => {
+                    dragIdx.current = index;
+                    e.dataTransfer.effectAllowed = 'move';
+                  }}
+                  onDragEnd={() => {
+                    dragIdx.current = null;
+                    setDragOverId(null);
+                  }}
+                >
+                  ⠿
+                </span>
                 <button
                   type="button"
                   className={styles.entry}
@@ -180,18 +238,6 @@ export function CategoryRail({
                 </button>
 
                 <div className={styles.entryTools}>
-                  <button type="button" className={styles.tool} title="Move up" disabled={index === 0 || busy} onClick={() => void move(index, -1)}>
-                    ↑
-                  </button>
-                  <button
-                    type="button"
-                    className={styles.tool}
-                    title="Move down"
-                    disabled={index === categories.length - 1 || busy}
-                    onClick={() => void move(index, 1)}
-                  >
-                    ↓
-                  </button>
                   <button
                     type="button"
                     className={styles.tool}
