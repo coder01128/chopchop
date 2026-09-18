@@ -1,0 +1,27 @@
+.nav {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.row {
+  display: block;
+  width: 100%;
+  border: none;
+  background: transparent;
+  padding: 0.5rem 1rem;
+  text-align: left;
+  font-size: 0.9rem;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.row:hover {
+  background: var(--fill);
+}
+
+.row[data-on] {
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-weight: 600;
+}

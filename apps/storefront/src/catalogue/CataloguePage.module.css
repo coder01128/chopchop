@@ -1,26 +1,3 @@
-/* Phone first. This is opened from a WhatsApp group on a mid-range Android. */
-
-.page {
-  display: flex;
-  flex-direction: column;
-  gap: 0.9rem;
-}
-
-.stickyNav {
-  position: sticky;
-  top: var(--header-h, 3.8rem);
-  z-index: 5;
-  background: var(--bg);
-  margin: 0 -1rem;
-  padding: 0 1rem 0.35rem;
-}
-
-.heading {
-  margin: 0;
-  font-size: 1.4rem;
-  letter-spacing: -0.02em;
-}
-
 .loading,
 .empty {
   color: var(--ink);
@@ -32,36 +9,6 @@
   border-radius: var(--radius);
   padding: 0.7rem 0.85rem;
   color: var(--danger);
-}
-
-.rail {
-  display: flex;
-  gap: 0.4rem;
-  overflow-x: auto;
-  margin: 0 -1rem;
-  padding: 0.1rem 1rem 0.4rem;
-  scrollbar-width: none;
-}
-
-.rail::-webkit-scrollbar {
-  display: none;
-}
-
-.chip {
-  flex: 0 0 auto;
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  background: var(--panel);
-  padding: 0.4rem 0.85rem;
-  font-size: 0.85rem;
-  cursor: pointer;
-}
-
-.chip[data-on] {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: var(--accent-ink);
-  font-weight: 600;
 }
 
 .grid {
@@ -114,7 +61,6 @@
   object-fit: cover;
 }
 
-/* A missing photo is a neutral block, never a broken image. */
 .thumb[data-empty] {
   background: repeating-linear-gradient(
     135deg,
@@ -157,19 +103,8 @@
   color: var(--fg);
 }
 
-@media (min-width: 34rem) {
+@media (min-width: 64rem) {
   .grid {
-    grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));
-  }
-
-  .heading {
-    font-size: 1.7rem;
-  }
-}
-
-@media (min-width: 40rem) {
-  .stickyNav {
-    margin: 0 -1.5rem;
-    padding: 0 1.5rem 0.35rem;
+    grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
   }
 }
