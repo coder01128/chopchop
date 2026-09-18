@@ -99,13 +99,56 @@
   gap: 0.15rem;
 }
 
-.qty input {
-  width: 5.5rem;
+.stepper {
+  display: flex;
+  align-items: center;
+}
+
+.stepBtn {
+  display: grid;
+  place-items: center;
+  width: 2.4rem;
+  height: 2.4rem;
   border: 1px solid var(--line);
-  border-radius: var(--radius);
-  background: var(--bg);
-  padding: 0.45rem 0.5rem;
+  background: var(--panel);
+  font-size: 1.15rem;
+  font-weight: 700;
   color: var(--ink);
+  cursor: pointer;
+  user-select: none;
+  flex-shrink: 0;
+}
+
+.stepBtn:first-child {
+  border-radius: var(--radius) 0 0 var(--radius);
+}
+
+.stepBtn:last-child {
+  border-radius: 0 var(--radius) var(--radius) 0;
+}
+
+.stepBtn:active {
+  background: var(--fill);
+}
+
+.qty input {
+  width: 3.5rem;
+  height: 2.4rem;
+  border: 1px solid var(--line);
+  border-left: none;
+  border-right: none;
+  border-radius: 0;
+  background: var(--bg);
+  padding: 0 0.3rem;
+  text-align: center;
+  color: var(--ink);
+  -moz-appearance: textfield;
+}
+
+.qty input::-webkit-inner-spin-button,
+.qty input::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
 }
 
 .stockHint {

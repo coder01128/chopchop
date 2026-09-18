@@ -30,7 +30,6 @@
 .head {
   display: flex;
   align-items: flex-start;
-  justify-content: space-between;
   gap: 0.75rem;
 }
 
@@ -38,19 +37,6 @@
   margin: 0;
   font-size: 1.2rem;
   letter-spacing: -0.01em;
-}
-
-.close {
-  flex: 0 0 auto;
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  background: transparent;
-  padding: 0.35rem 0.7rem;
-  font-family: var(--mono);
-  font-size: var(--text-xs);
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  cursor: pointer;
 }
 
 .imageHolder {
@@ -161,17 +147,61 @@
   color: var(--fg-muted);
 }
 
-.qty input {
-  width: 7rem;
+.stepper {
+  display: flex;
+  align-items: center;
+  gap: 0;
+}
+
+.stepBtn {
+  display: grid;
+  place-items: center;
+  width: 2.8rem;
+  height: 2.8rem;
   border: 1px solid var(--line);
-  border-radius: var(--radius);
+  background: var(--panel2);
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--ink);
+  cursor: pointer;
+  user-select: none;
+  flex-shrink: 0;
+}
+
+.stepBtn:first-child {
+  border-radius: var(--radius) 0 0 var(--radius);
+}
+
+.stepBtn:last-child {
+  border-radius: 0 var(--radius) var(--radius) 0;
+}
+
+.stepBtn:active {
+  background: var(--fill);
+}
+
+.qty input {
+  width: 4rem;
+  height: 2.8rem;
+  border: 1px solid var(--line);
+  border-left: none;
+  border-right: none;
+  border-radius: 0;
   background: var(--bg);
-  padding: 0.55rem 0.6rem;
+  padding: 0 0.4rem;
   font-family: var(--sans);
   font-size: 1rem;
   letter-spacing: normal;
   text-transform: none;
+  text-align: center;
   color: var(--ink);
+  -moz-appearance: textfield;
+}
+
+.qty input::-webkit-inner-spin-button,
+.qty input::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
 }
 
 .stockHint {
@@ -221,6 +251,21 @@
   color: var(--ink);
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+.continueShopping {
+  display: block;
+  width: 100%;
+  border: none;
+  background: transparent;
+  padding: 0.75rem 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 0.18em;
+  cursor: pointer;
+  text-align: center;
 }
 
 @media (min-width: 34rem) {

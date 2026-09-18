@@ -95,9 +95,6 @@ export function ProductSheet({
       <div className={styles.sheet} role="dialog" aria-modal="true" aria-label={item.name}>
         <header className={styles.head}>
           <h2 className={styles.title}>{item.name}</h2>
-          <button type="button" className={styles.close} onClick={onClose}>
-            Close
-          </button>
         </header>
 
         {/* The primary until the buyer picks a variant that has its own photo,
@@ -152,17 +149,47 @@ export function ProductSheet({
         ))}
 
         <div className={styles.buy}>
-          <label className={styles.qty}>
+          <div className={styles.qty}>
             <span>{decimal ? 'Quantity (kg)' : 'How many'}</span>
-            <input
-              type="number"
-              inputMode={decimal ? 'decimal' : 'numeric'}
-              min={decimal ? '0.001' : '1'}
-              max={maxQty}
-              step={quantityStep(tenant.saleMode)}
-              value={qtyText}
-              onChange={(event) => setQtyText(event.target.value)}
-            />
+            <div className={styles.stepper}>
+              <button
+                type="button"
+                className={styles.stepBtn}
+                aria-label="Decrease quantity"
+                onClick={() => {
+                  const cur = parseQty(qtyText, tenant.saleMode) ?? (decimal ? 0.5 : 1);
+                  const step = decimal ? 0.5 : 1;
+                  const min = decimal ? 0.5 : 1;
+                  const next = Math.max(min, cur - step);
+                  setQtyText(String(decimal ? Number(next.toFixed(3)) : next));
+                }}
+              >
+                −
+              </button>
+              <input
+                type="number"
+                inputMode={decimal ? 'decimal' : 'numeric'}
+                min={decimal ? '0.001' : '1'}
+                max={maxQty}
+                step={quantityStep(tenant.saleMode)}
+                value={qtyText}
+                onChange={(event) => setQtyText(event.target.value)}
+              />
+              <button
+                type="button"
+                className={styles.stepBtn}
+                aria-label="Increase quantity"
+                onClick={() => {
+                  const cur = parseQty(qtyText, tenant.saleMode) ?? 0;
+                  const step = decimal ? 0.5 : 1;
+                  const next = cur + step;
+                  const capped = maxQty !== undefined ? Math.min(next, maxQty) : next;
+                  setQtyText(String(decimal ? Number(capped.toFixed(3)) : capped));
+                }}
+              >
+                +
+              </button>
+            </div>
             {remaining !== null && variant && !soldOut && (
               <span className={styles.stockHint}>
                 {remaining <= 0
@@ -172,7 +199,7 @@ export function ProductSheet({
                     : `${variant.stock} available`}
               </span>
             )}
-          </label>
+          </div>
 
           <p className={styles.linePrice}>
             {variant ? (
@@ -216,6 +243,10 @@ export function ProductSheet({
               : complete
                 ? `Add to ${tenant.label('cart', 'cart')}`
                 : 'Choose an option'}
+        </button>
+
+        <button type="button" className={styles.continueShopping} onClick={onClose}>
+          Continue Shopping
         </button>
       </div>
     </div>

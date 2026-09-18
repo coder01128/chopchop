@@ -70,14 +70,57 @@
   gap: 0.1rem;
 }
 
-.qty input {
-  width: 4.5rem;
+.stepper {
+  display: flex;
+  align-items: center;
+}
+
+.stepBtn {
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
   border: 1px solid var(--line);
-  border-radius: var(--radius);
+  background: var(--panel);
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--ink);
+  cursor: pointer;
+  user-select: none;
+  flex-shrink: 0;
+}
+
+.stepBtn:first-child {
+  border-radius: var(--radius) 0 0 var(--radius);
+}
+
+.stepBtn:last-child {
+  border-radius: 0 var(--radius) var(--radius) 0;
+}
+
+.stepBtn:active {
+  background: var(--fill);
+}
+
+.qty input {
+  width: 3rem;
+  height: 2rem;
+  border: 1px solid var(--line);
+  border-left: none;
+  border-right: none;
+  border-radius: 0;
   background: var(--bg);
-  padding: 0.3rem 0.4rem;
+  padding: 0 0.2rem;
+  text-align: center;
   font-size: var(--text-sm);
   color: var(--ink);
+  -moz-appearance: textfield;
+}
+
+.qty input::-webkit-inner-spin-button,
+.qty input::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
 }
 
 .stockHint {

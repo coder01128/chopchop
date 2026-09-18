@@ -43,29 +43,60 @@ export function CartSheet({ onClose, onCheckout }: { onClose: () => void; onChec
                     <span className={styles.amount}>{money.format(lineTotal(line))}</span>
                   </div>
                   <div className={styles.lineBottom}>
-                    <label className={styles.qty}>
+                    <div className={styles.qty}>
                       <span className="cc-visually-hidden">Quantity for {line.name}</span>
-                      <input
-                        type="number"
-                        inputMode={tenant.saleMode === 'weight' ? 'decimal' : 'numeric'}
-                        min={tenant.saleMode === 'weight' ? '0.001' : '1'}
-                        max={tenant.stockMode === 'counted' ? line.stock : undefined}
-                        step={quantityStep(tenant.saleMode)}
-                        value={formatQty(line.qty, tenant.saleMode)}
-                        onChange={(event) => {
-                          const next = parseQty(event.target.value, tenant.saleMode);
-                          if (next === null) return;
-                          const capped =
-                            tenant.stockMode === 'counted'
-                              ? Math.min(next, line.stock)
-                              : next;
-                          cart.setQty(line.variantId, capped);
-                        }}
-                      />
+                      <div className={styles.stepper}>
+                        <button
+                          type="button"
+                          className={styles.stepBtn}
+                          aria-label="Decrease"
+                          onClick={() => {
+                            const decimal = tenant.saleMode === 'weight';
+                            const step = decimal ? 0.5 : 1;
+                            const min = decimal ? 0.5 : 1;
+                            const next = Math.max(min, line.qty - step);
+                            const capped = tenant.stockMode === 'counted' ? Math.min(next, line.stock) : next;
+                            cart.setQty(line.variantId, decimal ? Number(capped.toFixed(3)) : capped);
+                          }}
+                        >
+                          −
+                        </button>
+                        <input
+                          type="number"
+                          inputMode={tenant.saleMode === 'weight' ? 'decimal' : 'numeric'}
+                          min={tenant.saleMode === 'weight' ? '0.001' : '1'}
+                          max={tenant.stockMode === 'counted' ? line.stock : undefined}
+                          step={quantityStep(tenant.saleMode)}
+                          value={formatQty(line.qty, tenant.saleMode)}
+                          onChange={(event) => {
+                            const next = parseQty(event.target.value, tenant.saleMode);
+                            if (next === null) return;
+                            const capped =
+                              tenant.stockMode === 'counted'
+                                ? Math.min(next, line.stock)
+                                : next;
+                            cart.setQty(line.variantId, capped);
+                          }}
+                        />
+                        <button
+                          type="button"
+                          className={styles.stepBtn}
+                          aria-label="Increase"
+                          onClick={() => {
+                            const decimal = tenant.saleMode === 'weight';
+                            const step = decimal ? 0.5 : 1;
+                            const next = line.qty + step;
+                            const capped = tenant.stockMode === 'counted' ? Math.min(next, line.stock) : next;
+                            cart.setQty(line.variantId, decimal ? Number(capped.toFixed(3)) : capped);
+                          }}
+                        >
+                          +
+                        </button>
+                      </div>
                       {tenant.stockMode === 'counted' && (
                         <span className={styles.stockHint}>{line.stock} available</span>
                       )}
-                    </label>
+                    </div>
                     <span className={styles.unitPrice}>× {money.format(line.price)}</span>
                     <button
                       type="button"
