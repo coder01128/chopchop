@@ -256,7 +256,7 @@ export function ProductSheet({
         </button>
 
         <button type="button" className={styles.continueShopping} onClick={onClose}>
-          Continue Shopping
+          Back to Store
         </button>
       </div>
     </div>

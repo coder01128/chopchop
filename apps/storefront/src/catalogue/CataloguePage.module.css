@@ -51,7 +51,7 @@
   flex-direction: column;
   gap: 0;
   border: 1px solid var(--fg, #1F1F1F);
-  border-radius: var(--radius);
+  border-radius: 1.25rem;
   background: var(--panel);
   padding: 0;
   color: inherit;
@@ -129,6 +129,6 @@
 
 @media (min-width: 64rem) {
   .sectionGrid {
-    grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr));
   }
 }
