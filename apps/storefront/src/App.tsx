@@ -113,6 +113,7 @@ function Shopfront() {
           <SearchBar value={searchQuery} onChange={setSearchQuery} />
           <CataloguePage
             items={visible}
+            categories={catalogue.categories}
             loading={loading}
             error={error}
             hasFilters={categoryId !== null || searchQuery !== ''}

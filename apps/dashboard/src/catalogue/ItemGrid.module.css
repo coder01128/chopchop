@@ -57,7 +57,7 @@
 .thumb {
   display: grid;
   place-items: center;
-  aspect-ratio: 4 / 3;
+  aspect-ratio: 1 / 1;
   background: var(--fill);
   overflow: hidden;
 }
