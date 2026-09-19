@@ -91,7 +91,7 @@ export function parseNumber(raw: string): number | null {
 // Column mapping
 // ===========================================================================
 
-export type SimpleField = 'name' | 'price' | 'category' | 'stock' | 'sku';
+export type SimpleField = 'name' | 'price' | 'category' | 'stock' | 'sku' | 'description' | 'image';
 export type ColumnTarget = 'ignore' | SimpleField | `attribute:${string}`;
 export type Mapping = ColumnTarget[];
 
@@ -109,14 +109,16 @@ export function targetAttributeName(target: ColumnTarget): string | null {
  * Afrikaans is here because the market is, not because a client asked.
  */
 const FIELD_HINTS: Record<SimpleField, string[]> = {
-  name: ['name', 'product', 'item', 'title', 'produk', 'beskrywing'],
+  name: ['name', 'product', 'item', 'title', 'produk'],
   price: ['price', 'amount', 'cost', 'rate', 'prys', 'r'],
   category: ['category', 'cat', 'group', 'section', 'type', 'kategorie'],
   stock: ['stock', 'qty', 'quantity', 'count', 'on hand', 'available', 'voorraad'],
   sku: ['sku', 'code', 'ref', 'barcode', 'item code', 'product code', 'kode'],
+  description: ['description', 'desc', 'detail', 'details', 'notes', 'beskrywing', 'info'],
+  image: ['image', 'image url', 'photo', 'picture', 'foto', 'img', 'image link', 'photo url'],
 };
 
-const FIELD_ORDER: SimpleField[] = ['name', 'price', 'sku', 'category', 'stock'];
+const FIELD_ORDER: SimpleField[] = ['name', 'price', 'sku', 'category', 'stock', 'description', 'image'];
 
 function hintScore(header: string, hints: string[]): number {
   const value = normalise(header);
@@ -214,6 +216,8 @@ export interface ParsedRow {
   stock: number | null;
   sku: string | null;
   category: string | null;
+  description: string | null;
+  imageUrl: string | null;
   attributes: Record<string, string>;
   /** Non-empty means this row is excluded from the commit and shown as an error. */
   errors: string[];
@@ -238,6 +242,8 @@ export function readRows(table: SheetTable, mapping: Mapping): ParsedRow[] {
   const categoryColumn = mappedColumn(mapping, 'category');
   const stockColumn = mappedColumn(mapping, 'stock');
   const skuColumn = mappedColumn(mapping, 'sku');
+  const descriptionColumn = mappedColumn(mapping, 'description');
+  const imageColumn = mappedColumn(mapping, 'image');
 
   const attributeColumns = mapping
     .map((target, index) => ({ name: targetAttributeName(target), index }))
@@ -253,6 +259,8 @@ export function readRows(table: SheetTable, mapping: Mapping): ParsedRow[] {
     const stockText = cellAt(raw, stockColumn);
     const skuText = cellAt(raw, skuColumn);
     const categoryText = cellAt(raw, categoryColumn);
+    const descriptionText = cellAt(raw, descriptionColumn);
+    const imageText = cellAt(raw, imageColumn);
 
     const attributes: Record<string, string> = {};
     for (const column of attributeColumns) {
@@ -268,6 +276,8 @@ export function readRows(table: SheetTable, mapping: Mapping): ParsedRow[] {
       stockText === '' &&
       skuText === '' &&
       categoryText === '' &&
+      descriptionText === '' &&
+      imageText === '' &&
       Object.keys(attributes).length === 0;
     if (blank) return;
 
@@ -293,6 +303,8 @@ export function readRows(table: SheetTable, mapping: Mapping): ParsedRow[] {
       stock,
       sku: skuText === '' ? null : skuText,
       category: categoryText === '' ? null : categoryText,
+      description: descriptionText === '' ? null : descriptionText,
+      imageUrl: imageText === '' ? null : imageText,
       attributes,
       errors,
     });
@@ -426,7 +438,7 @@ export interface ExistingCatalogue {
 export type Outcome = 'new' | 'unchanged' | 'update' | 'ambiguous';
 
 export interface FieldChange {
-  field: 'name' | 'price' | 'stock' | 'sku';
+  field: 'name' | 'price' | 'stock' | 'sku' | 'description';
   from: string;
   to: string;
 }
@@ -449,6 +461,8 @@ export interface PlannedItem {
   key: string;
   name: string;
   categoryName: string | null;
+  description: string | null;
+  imageUrl: string | null;
   itemId: string | null;
   outcome: Outcome;
   changes: FieldChange[];
@@ -619,9 +633,18 @@ export function buildPlan(
     }
 
     const existingItem = itemId ? (itemsById.get(itemId) ?? null) : null;
+    const description = kept.find((row) => row.description !== null)?.description ?? null;
+    const imageUrl = kept.find((row) => row.imageUrl !== null)?.imageUrl ?? null;
     const itemChanges: FieldChange[] = [];
     if (existingItem && existingItem.name !== kept[0].name) {
       itemChanges.push({ field: 'name', from: existingItem.name, to: kept[0].name });
+    }
+    if (description !== null && existingItem && (existingItem.description ?? '') !== description) {
+      itemChanges.push({
+        field: 'description',
+        from: existingItem.description ?? '',
+        to: description,
+      });
     }
 
     const candidates = itemId ? (variantsByItem.get(itemId) ?? []) : [];
@@ -700,6 +723,8 @@ export function buildPlan(
       key,
       name: kept[0].name,
       categoryName: kept.find((row) => row.category !== null)?.category ?? null,
+      description,
+      imageUrl,
       itemId,
       outcome,
       changes: itemChanges,
@@ -729,9 +754,11 @@ export function writableItems(plan: ImportPlan): PlannedItem[] {
 export interface SavePayload {
   item: {
     id: string | null;
+    new_id?: string;
     name: string;
     description: string;
     image_url: string;
+    image_path?: string;
     category_id: string | null;
     active: boolean;
   };
@@ -773,7 +800,7 @@ export function toSavePayload(
     item: {
       id: planned.itemId,
       name: planned.name,
-      description: existing?.description ?? '',
+      description: planned.description ?? existing?.description ?? '',
       image_url: existing?.imageUrl ?? '',
       // A file with no category for this product must not clear the one the
       // seller already chose.
@@ -842,6 +869,8 @@ export function batchRows(rows: ParsedRow[]): Json[] {
     stock: row.stock,
     sku: row.sku,
     category: row.category,
+    description: row.description,
+    imageUrl: row.imageUrl,
     attributes: row.attributes,
     errors: row.errors,
   }));

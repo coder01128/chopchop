@@ -1,4 +1,5 @@
-import type { ChopChopClient } from '@chopchop/shared';
+import { IMAGE_BUCKET, buildImagePath, type ChopChopClient } from '@chopchop/shared';
+import { resizeImage } from '../catalogue/resize-image';
 import {
   batchRows,
   nextSortOrders,
@@ -10,6 +11,7 @@ import {
   type ImportPlan,
   type ParsedRow,
   type PlanOptions,
+  type SavePayload,
 } from './import-model';
 
 /**
@@ -199,6 +201,10 @@ export async function commitPlan(
       options,
     );
 
+    if (planned.imageUrl) {
+      await fetchAndUploadImage(client, tenantId, payload, planned.imageUrl);
+    }
+
     const { error } = await client.rpc('save_product', {
       p_tenant_id: tenantId,
       p_item: payload.item,
@@ -217,4 +223,40 @@ export async function commitPlan(
   }
 
   return result;
+}
+
+/**
+ * Fetch an image from a URL, resize it, upload to the product-images bucket,
+ * and set `image_path` (and `new_id` for new products) on the payload.
+ *
+ * Failures are swallowed — a broken image link must not prevent the product
+ * from being imported. The console gets the detail; the seller gets the product
+ * without a photo, which is fixable in the editor.
+ */
+async function fetchAndUploadImage(
+  client: ChopChopClient,
+  tenantId: string,
+  payload: SavePayload,
+  url: string,
+): Promise<void> {
+  try {
+    const response = await fetch(url);
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+    const blob = await response.blob();
+    const resized = await resizeImage(blob);
+
+    const itemId = payload.item.id ?? crypto.randomUUID();
+    if (!payload.item.id) payload.item.new_id = itemId;
+
+    const path = buildImagePath(tenantId, itemId, crypto.randomUUID(), resized.contentType);
+    const { error } = await client.storage
+      .from(IMAGE_BUCKET)
+      .upload(path, resized.blob, { contentType: resized.contentType, upsert: false });
+    if (error) throw error;
+
+    payload.item.image_path = path;
+  } catch (err) {
+    console.warn(`Image import failed for "${payload.item.name}" (${url}):`, err);
+  }
 }

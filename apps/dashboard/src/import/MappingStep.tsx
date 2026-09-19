@@ -31,6 +31,8 @@ const SIMPLE_LABELS: { target: ColumnTarget; label: string }[] = [
   { target: 'category', label: 'Category' },
   { target: 'stock', label: 'Stock' },
   { target: 'sku', label: 'SKU' },
+  { target: 'description', label: 'Description' },
+  { target: 'image', label: 'Image URL' },
 ];
 
 export function MappingStep({

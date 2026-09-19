@@ -139,7 +139,8 @@ describe('guessMapping', () => {
   it('names every column it is ignoring', () => {
     const sheet = table(['Product', 'Price', 'Supplier', 'Notes'], []);
     const mapping = guessMapping(sheet.headers, []);
-    expect(ignoredHeaders(sheet, mapping)).toEqual(['Supplier', 'Notes']);
+    // "Notes" maps to description now, so only "Supplier" is ignored.
+    expect(ignoredHeaders(sheet, mapping)).toEqual(['Supplier']);
   });
 
   it('will not proceed without a name and a price column', () => {
