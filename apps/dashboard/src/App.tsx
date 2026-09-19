@@ -11,33 +11,38 @@ import { OrdersPage } from './orders/OrdersPage';
 import { Settings } from './routes/Settings';
 import { Notice } from './ui/Notice';
 
-const DEMO_EMAIL = 'demo-shoes-owner@example.com';
-const DEMO_PASSWORD = 'chopchop-demo-2026';
+interface DemoProfile { email: string; password: string }
 
-function isDemoRequested(): boolean {
-  return new URLSearchParams(window.location.search).get('demo') === '1';
+const DEMO_PROFILES: Record<string, DemoProfile> = {
+  '1':          { email: 'demo-shoes-owner@example.com', password: 'chopchop-demo-2026' },
+  'trattoria':  { email: 'trattoria@mail.co.za',         password: 'trattor!@' },
+};
+
+function getDemoProfile(): DemoProfile | null {
+  const val = new URLSearchParams(window.location.search).get('demo');
+  return val ? DEMO_PROFILES[val] ?? null : null;
 }
 
 function Protected() {
   const { session, loading, signIn } = useAuth();
-  const [demoActive] = useState(isDemoRequested);
+  const [demoProfile] = useState(getDemoProfile);
   const attemptedRef = useRef(false);
 
   useEffect(() => {
-    if (!demoActive || loading || session || attemptedRef.current) return;
+    if (!demoProfile || loading || session || attemptedRef.current) return;
     attemptedRef.current = true;
-    signIn(DEMO_EMAIL, DEMO_PASSWORD);
-  }, [demoActive, loading, session, signIn]);
+    signIn(demoProfile.email, demoProfile.password);
+  }, [demoProfile, loading, session, signIn]);
 
   if (loading) return <Notice title="Loading…" />;
 
-  if (demoActive && !session) return <Notice title="Signing into demo…" />;
+  if (demoProfile && !session) return <Notice title="Signing into demo…" />;
 
   if (!session) return <SignIn />;
 
   return (
     <>
-      {demoActive && <DemoBanner />}
+      {demoProfile && <DemoBanner />}
       <TenantGate>
         <Routes>
           <Route element={<Shell />}>
