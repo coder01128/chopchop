@@ -1,27 +1,16 @@
-import type { TenantAttribute } from '@chopchop/shared';
 import {
   attributeTarget,
   ignoredHeaders,
   mappedColumn,
   mappingProblems,
+  normalise,
   targetAttributeName,
+  type AttributeLabels,
   type ColumnTarget,
   type Mapping,
   type SheetTable,
 } from './import-model';
 import styles from './MappingStep.module.css';
-
-/**
- * Column mapping.
- *
- * This screen consumes a headers-plus-rows table and nothing else — it cannot
- * tell a `.csv` from an `.xlsx` from ticket 06B's vision extraction, which is
- * the point of the seam.
- *
- * The attribute targets are the one place `attribute_schema` is read as a
- * palette. It offers what this business *can* record; what a product's
- * selectors render from is still the keys on that product's own variants.
- */
 
 const PREVIEW_ROWS = 5;
 
@@ -35,10 +24,18 @@ const SIMPLE_LABELS: { target: ColumnTarget; label: string }[] = [
   { target: 'image', label: 'Image URL' },
 ];
 
+function enforceUnique(current: Mapping, index: number, target: ColumnTarget): Mapping {
+  return current.map((existing, position) => {
+    if (position === index) return target;
+    if (target !== 'ignore' && existing === target) return 'ignore' as ColumnTarget;
+    return existing;
+  });
+}
+
 export function MappingStep({
   table,
   mapping,
-  palette,
+  attributeLabels,
   trackStock,
   onChange,
   onBack,
@@ -46,9 +43,9 @@ export function MappingStep({
 }: {
   table: SheetTable;
   mapping: Mapping;
-  palette: TenantAttribute[];
+  attributeLabels: AttributeLabels;
   trackStock: boolean;
-  onChange: (mapping: Mapping) => void;
+  onChange: (mapping: Mapping, labels: AttributeLabels) => void;
   onBack: () => void;
   onContinue: () => void;
 }) {
@@ -56,15 +53,46 @@ export function MappingStep({
   const ignored = ignoredHeaders(table, mapping);
   const stockColumn = mappedColumn(mapping, 'stock');
 
-  function setTarget(index: number, target: ColumnTarget) {
-    // One target, one column. Choosing a target that is already in use moves
-    // it rather than mapping two columns to the same field.
-    const next = mapping.map((current, position) => {
-      if (position === index) return target;
-      if (target !== 'ignore' && current === target) return 'ignore';
-      return current;
-    });
-    onChange(next);
+  function selectChange(index: number, value: string) {
+    if (value === 'filterable') {
+      const header = table.headers[index];
+      const name = normalise(header) || `column_${index + 1}`;
+      const target = attributeTarget(name);
+      onChange(
+        enforceUnique(mapping, index, target),
+        { ...attributeLabels, [name]: header || name },
+      );
+    } else {
+      const target = value as ColumnTarget;
+      const oldName = targetAttributeName(mapping[index]);
+      const nextMapping = enforceUnique(mapping, index, target);
+
+      let nextLabels = attributeLabels;
+      if (oldName && !nextMapping.some((t) => targetAttributeName(t) === oldName)) {
+        nextLabels = { ...attributeLabels };
+        delete nextLabels[oldName];
+      }
+
+      onChange(nextMapping, nextLabels);
+    }
+  }
+
+  function labelChange(index: number, newLabel: string) {
+    const oldName = targetAttributeName(mapping[index]);
+    if (!oldName) return;
+
+    const newName = normalise(newLabel) || oldName;
+    const nextLabels = { ...attributeLabels };
+
+    if (newName !== oldName) {
+      const nextMapping = enforceUnique(mapping, index, attributeTarget(newName));
+      delete nextLabels[oldName];
+      nextLabels[newName] = newLabel;
+      onChange(nextMapping, nextLabels);
+    } else {
+      nextLabels[oldName] = newLabel;
+      onChange(mapping, nextLabels);
+    }
   }
 
   return (
@@ -85,41 +113,53 @@ export function MappingStep({
       </p>
 
       <ul className={styles.columns}>
-        {table.headers.map((header, index) => (
-          <li key={`${header}-${index}`} className={styles.column}>
-            <div className={styles.columnHead}>
-              <span className={styles.header}>{header || <em>(no heading)</em>}</span>
-              <span className={styles.sample}>
-                {table.rows
-                  .slice(0, PREVIEW_ROWS)
-                  .map((row) => row[index])
-                  .filter((value) => (value ?? '').trim() !== '')
-                  .slice(0, 3)
-                  .join(' · ') || '—'}
-              </span>
-            </div>
+        {table.headers.map((header, index) => {
+          const attrName = targetAttributeName(mapping[index]);
+          const selectValue = attrName !== null ? 'filterable' : mapping[index];
 
-            <label className={styles.select}>
-              <span className="cc-visually-hidden">Map column {header}</span>
-              <select
-                value={mapping[index]}
-                onChange={(event) => setTarget(index, event.target.value as ColumnTarget)}
-              >
-                <option value="ignore">Ignore this column</option>
-                {SIMPLE_LABELS.map((entry) => (
-                  <option key={entry.target} value={entry.target}>
-                    {entry.label}
-                  </option>
-                ))}
-                {palette.map((attribute) => (
-                  <option key={attribute.name} value={attributeTarget(attribute.name)}>
-                    {attribute.label || attribute.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-          </li>
-        ))}
+          return (
+            <li key={`${header}-${index}`} className={styles.column}>
+              <div className={styles.columnHead}>
+                <span className={styles.header}>{header || <em>(no heading)</em>}</span>
+                <span className={styles.sample}>
+                  {table.rows
+                    .slice(0, PREVIEW_ROWS)
+                    .map((row) => row[index])
+                    .filter((value) => (value ?? '').trim() !== '')
+                    .slice(0, 3)
+                    .join(' · ') || '—'}
+                </span>
+              </div>
+
+              <label className={styles.select}>
+                <span className="cc-visually-hidden">Map column {header}</span>
+                <select
+                  value={selectValue}
+                  onChange={(event) => selectChange(index, event.target.value)}
+                >
+                  <option value="ignore">Ignore this column</option>
+                  {SIMPLE_LABELS.map((entry) => (
+                    <option key={entry.target} value={entry.target}>
+                      {entry.label}
+                    </option>
+                  ))}
+                  <option value="filterable">Filterable attribute</option>
+                </select>
+              </label>
+
+              {attrName !== null && (
+                <input
+                  type="text"
+                  className={styles.attrLabel}
+                  value={attributeLabels[attrName] ?? ''}
+                  placeholder="Attribute label"
+                  aria-label={`Label for ${header}`}
+                  onChange={(e) => labelChange(index, e.target.value)}
+                />
+              )}
+            </li>
+          );
+        })}
       </ul>
 
       {ignored.length > 0 && (
@@ -128,14 +168,9 @@ export function MappingStep({
         </p>
       )}
 
-      {/*
-        An availability tenant gets no stock figure written — save_product reads
-        the mode off the tenant row. The seller mapped that column, so they are
-        told where it goes, and the column is named.
-      */}
       {!trackStock && stockColumn >= 0 && (
         <p className={styles.note}>
-          The stock column “{table.headers[stockColumn] || '(no heading)'}” will be ignored. This
+          The stock column "{table.headers[stockColumn] || '(no heading)'}" will be ignored. This
           business works on an in-stock switch, not a count, so no stock figure is stored.
         </p>
       )}
@@ -148,9 +183,9 @@ export function MappingStep({
         </ul>
       )}
 
-      {mapping.some((target) => targetAttributeName(target) !== null) === false && palette.length > 0 && (
+      {mapping.every((target) => targetAttributeName(target) === null) && (
         <p className={styles.note}>
-          No column is mapped to a variant option, so every product gets one variant.
+          No column is a filterable attribute, so every product gets one variant.
         </p>
       )}
 

@@ -1,11 +1,13 @@
-import { IMAGE_BUCKET, buildImagePath, type ChopChopClient } from '@chopchop/shared';
+import { IMAGE_BUCKET, buildImagePath, type ChopChopClient, type Json, type TenantAttribute } from '@chopchop/shared';
 import { resizeImage } from '../catalogue/resize-image';
 import {
   batchRows,
+  collectNewAttributes,
   nextSortOrders,
   normalise,
   toSavePayload,
   writableItems,
+  type AttributeLabels,
   type CategoryDecision,
   type ExistingCatalogue,
   type ImportPlan,
@@ -123,6 +125,7 @@ export interface CommitResult {
   categoriesCreated: number;
   itemsWritten: number;
   variantsWritten: number;
+  attributesAdded: number;
   failures: ItemFailure[];
 }
 
@@ -141,11 +144,14 @@ export async function commitPlan(
   decisions: CategoryDecision[],
   existing: ExistingCatalogue,
   options: PlanOptions,
+  attributeLabels: AttributeLabels,
+  palette: TenantAttribute[],
 ): Promise<CommitResult> {
   const result: CommitResult = {
     categoriesCreated: 0,
     itemsWritten: 0,
     variantsWritten: 0,
+    attributesAdded: 0,
     failures: [],
   };
 
@@ -220,6 +226,20 @@ export async function commitPlan(
 
     result.itemsWritten += 1;
     result.variantsWritten += payload.variants.length;
+  }
+
+  // ── grow the palette with any new attributes from this import ────────
+  const newEntries = collectNewAttributes(plan, attributeLabels, palette);
+  if (newEntries.length > 0) {
+    const updatedPalette = [...palette, ...newEntries];
+    const { error: paletteError } = await client
+      .from('tenants')
+      .update({ attribute_schema: updatedPalette as unknown as Json })
+      .eq('id', tenantId);
+    if (paletteError) {
+      console.warn('Could not update attribute palette:', paletteError.message);
+    }
+    result.attributesAdded = newEntries.length;
   }
 
   return result;

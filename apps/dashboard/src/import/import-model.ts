@@ -95,6 +95,8 @@ export type SimpleField = 'name' | 'price' | 'category' | 'stock' | 'sku' | 'des
 export type ColumnTarget = 'ignore' | SimpleField | `attribute:${string}`;
 export type Mapping = ColumnTarget[];
 
+export type AttributeLabels = Record<string, string>;
+
 export function attributeTarget(name: string): ColumnTarget {
   return `attribute:${name}`;
 }
@@ -177,6 +179,24 @@ export function guessMapping(headers: string[], palette: TenantAttribute[]): Map
   }
 
   return mapping;
+}
+
+export function defaultAttributeLabels(
+  mapping: Mapping,
+  headers: string[],
+  palette: TenantAttribute[],
+): AttributeLabels {
+  const labels: AttributeLabels = {};
+  const paletteByName = new Map(palette.map((a) => [a.name, a]));
+
+  mapping.forEach((target, index) => {
+    const name = targetAttributeName(target);
+    if (name === null) return;
+    const paletteEntry = paletteByName.get(name);
+    labels[name] = paletteEntry?.label ?? headers[index] ?? name;
+  });
+
+  return labels;
 }
 
 /** Headers whose target is `ignore` — named on screen, never dropped quietly. */
@@ -858,6 +878,31 @@ export function resolveAsNew(plan: ImportPlan, key: string): ImportPlan {
   });
 
   return { ...plan, items, counts: countProducts(items, plan.errorRows.length) };
+}
+
+export function collectNewAttributes(
+  plan: ImportPlan,
+  attributeLabels: AttributeLabels,
+  palette: TenantAttribute[],
+): TenantAttribute[] {
+  const existing = new Set(palette.map((a) => a.name));
+  const valuesByName = new Map<string, Set<string>>();
+
+  for (const item of plan.items) {
+    for (const variant of item.variants) {
+      for (const [name, value] of Object.entries(variant.attributes)) {
+        if (existing.has(name)) continue;
+        if (!valuesByName.has(name)) valuesByName.set(name, new Set());
+        valuesByName.get(name)!.add(value);
+      }
+    }
+  }
+
+  return [...valuesByName.entries()].map(([name, values]) => ({
+    name,
+    label: attributeLabels[name] ?? name,
+    options: [...values].sort(),
+  }));
 }
 
 /** What `import_batches.raw` records: the rows as parsed, before any approval. */

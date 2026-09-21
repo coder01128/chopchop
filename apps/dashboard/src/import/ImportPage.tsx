@@ -3,9 +3,11 @@ import { getSupabaseClient, useTenant } from '@chopchop/shared';
 import {
   buildPlan,
   collectCategories,
+  defaultAttributeLabels,
   guessMapping,
   readRows,
   resolveAsNew,
+  type AttributeLabels,
   type CategoryDecision,
   type ExistingCatalogue,
   type ImportPlan,
@@ -33,11 +35,12 @@ import styles from './ImportPage.module.css';
 
 type Stage =
   | { name: 'pick' }
-  | { name: 'map'; table: SheetTable; mapping: Mapping }
+  | { name: 'map'; table: SheetTable; mapping: Mapping; attributeLabels: AttributeLabels }
   | {
       name: 'review';
       table: SheetTable;
       mapping: Mapping;
+      attributeLabels: AttributeLabels;
       plan: ImportPlan;
       decisions: CategoryDecision[];
       existing: ExistingCatalogue;
@@ -101,7 +104,9 @@ export function ImportPage() {
           `That file has ${table.rows.length} rows. Import handles up to ${MAX_ROWS} at a time — split it and run it twice.`,
         );
       }
-      setStage({ name: 'map', table, mapping: guessMapping(table.headers, tenant.attributeSchema) });
+      const mapping = guessMapping(table.headers, tenant.attributeSchema);
+      const attributeLabels = defaultAttributeLabels(mapping, table.headers, tenant.attributeSchema);
+      setStage({ name: 'map', table, mapping, attributeLabels });
     } catch (parseError) {
       setError(parseError instanceof Error ? parseError.message : String(parseError));
     } finally {
@@ -109,7 +114,7 @@ export function ImportPage() {
     }
   }
 
-  async function toReview(table: SheetTable, mapping: Mapping) {
+  async function toReview(table: SheetTable, mapping: Mapping, labels: AttributeLabels) {
     setError(null);
     setBusy(true);
     try {
@@ -117,10 +122,8 @@ export function ImportPage() {
       const rows = readRows(table, mapping);
       const plan = buildPlan(rows, existing, options);
       const decisions = collectCategories(rows, existing.categories);
-      // The batch row is written now, at `pending`, so a seller who closes the
-      // tab leaves a trace rather than nothing at all.
       const batchId = await openBatch(client, tenant.id, rows);
-      setStage({ name: 'review', table, mapping, plan, decisions, existing, batchId });
+      setStage({ name: 'review', table, mapping, attributeLabels: labels, plan, decisions, existing, batchId });
     } catch (loadError) {
       setError(loadError instanceof Error ? loadError.message : String(loadError));
     } finally {
@@ -153,6 +156,8 @@ export function ImportPage() {
         stageState.decisions,
         stageState.existing,
         options,
+        stageState.attributeLabels,
+        tenant.attributeSchema,
       );
       // Applied means the batch was applied, not that every row succeeded.
       await closeBatch(client, stageState.batchId, 'applied');
@@ -227,11 +232,11 @@ export function ImportPage() {
         <MappingStep
           table={stage.table}
           mapping={stage.mapping}
-          palette={tenant.attributeSchema}
+          attributeLabels={stage.attributeLabels}
           trackStock={options.trackStock}
-          onChange={(mapping) => setStage({ ...stage, mapping })}
+          onChange={(mapping, attributeLabels) => setStage({ ...stage, mapping, attributeLabels })}
           onBack={reset}
-          onContinue={() => void toReview(stage.table, stage.mapping)}
+          onContinue={() => void toReview(stage.table, stage.mapping, stage.attributeLabels)}
         />
       )}
 
@@ -271,6 +276,12 @@ export function ImportPage() {
               <strong>{stage.result.categoriesCreated}</strong> categor
               {stage.result.categoriesCreated === 1 ? 'y' : 'ies'} created
             </li>
+            {stage.result.attributesAdded > 0 && (
+              <li>
+                <strong>{stage.result.attributesAdded}</strong> new attribute
+                {stage.result.attributesAdded === 1 ? '' : 's'} added
+              </li>
+            )}
           </ul>
 
           {stage.result.failures.length > 0 && (

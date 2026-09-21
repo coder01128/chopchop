@@ -13,6 +13,8 @@ import type { TenantAttribute } from '@chopchop/shared';
 import {
   buildPlan,
   collectCategories,
+  collectNewAttributes,
+  defaultAttributeLabels,
   describeAttributes,
   guessMapping,
   ignoredHeaders,
@@ -812,5 +814,205 @@ describe('describeAttributes', () => {
   it('names the combination, and says so when there is not one', () => {
     expect(describeAttributes({ size: '9', colour: 'red' })).toBe('colour red · size 9');
     expect(describeAttributes({})).toBe('single variant');
+  });
+});
+
+// ===========================================================================
+// Attribute labels
+// ===========================================================================
+
+describe('defaultAttributeLabels', () => {
+  it('uses palette labels for matched attributes', () => {
+    const mapping = guessMapping(['Name', 'Size', 'Colour', 'Price'], SHOES);
+    const labels = defaultAttributeLabels(mapping, ['Name', 'Size', 'Colour', 'Price'], SHOES);
+    expect(labels).toEqual({ size: 'Size', colour: 'Colour' });
+  });
+
+  it('uses header text when no palette match exists', () => {
+    const mapping: Mapping = ['name', 'attribute:brand', 'price'];
+    const labels = defaultAttributeLabels(mapping, ['Product', 'Brand', 'Price'], []);
+    expect(labels).toEqual({ brand: 'Brand' });
+  });
+
+  it('returns empty for mappings with no attributes', () => {
+    const mapping: Mapping = ['name', 'price', 'category'];
+    const labels = defaultAttributeLabels(mapping, ['Product', 'Price', 'Category'], []);
+    expect(labels).toEqual({});
+  });
+});
+
+// ===========================================================================
+// New attribute collection
+// ===========================================================================
+
+describe('collectNewAttributes', () => {
+  it('collects attributes not in the palette with sorted options', () => {
+    const sheet = table(
+      ['Name', 'Brand', 'Model', 'Price'],
+      [
+        ['Phone case', 'Samsung', 'S24', '299'],
+        ['Phone case', 'Apple', 'iPhone 15', '349'],
+        ['Cable', 'Baseus', '1m', '89'],
+      ],
+    );
+    const mapping: Mapping = ['name', 'attribute:brand', 'attribute:model', 'price'];
+    const rows = readRows(sheet, mapping);
+    const plan = buildPlan(rows, catalogue(), COUNTED);
+
+    const newEntries = collectNewAttributes(
+      plan,
+      { brand: 'Brand', model: 'Model' },
+      [],
+    );
+
+    expect(newEntries).toHaveLength(2);
+    expect(newEntries.find((a) => a.name === 'brand')).toEqual({
+      name: 'brand',
+      label: 'Brand',
+      options: ['Apple', 'Baseus', 'Samsung'],
+    });
+    expect(newEntries.find((a) => a.name === 'model')).toEqual({
+      name: 'model',
+      label: 'Model',
+      options: ['1m', 'S24', 'iPhone 15'],
+    });
+  });
+
+  it('does not duplicate attributes already in the palette', () => {
+    const sheet = table(['Name', 'Size', 'Price'], [['Sneaker', '10', '899']]);
+    const mapping: Mapping = ['name', 'attribute:size', 'price'];
+    const rows = readRows(sheet, mapping);
+    const plan = buildPlan(rows, catalogue(), COUNTED);
+
+    const newEntries = collectNewAttributes(plan, { size: 'Size' }, SHOES);
+    expect(newEntries).toEqual([]);
+  });
+
+  it('falls back to the attribute name when no label exists', () => {
+    const sheet = table(['Name', 'Fabric', 'Price'], [['Shirt', 'Cotton', '399']]);
+    const mapping: Mapping = ['name', 'attribute:fabric', 'price'];
+    const rows = readRows(sheet, mapping);
+    const plan = buildPlan(rows, catalogue(), COUNTED);
+
+    const newEntries = collectNewAttributes(plan, {}, []);
+    expect(newEntries[0].label).toBe('fabric');
+  });
+});
+
+// ===========================================================================
+// Dynamic schema — three verticals, zero code changes between them
+// ===========================================================================
+
+describe('dynamic schema validation', () => {
+  it('butchery CSV: Category, Product, Price, Description', () => {
+    const headers = ['Category', 'Product', 'Price', 'Description'];
+    const mapping = guessMapping(headers, []);
+    expect(mapping).toEqual(['category', 'name', 'price', 'description']);
+    expect(mappingProblems(mapping)).toEqual([]);
+
+    const sheet = table(headers, [
+      ['Beef', 'Boerewors', '89.90', 'Farm style'],
+      ['Beef', 'Rump steak', '249', 'Prime cut'],
+      ['Lamb', 'Lamb chops', '169', ''],
+    ]);
+    const rows = readRows(sheet, mapping);
+    const plan = buildPlan(rows, catalogue(), AVAILABILITY);
+
+    expect(plan.counts.newProducts).toBe(3);
+    expect(plan.items[0].variants[0].attributes).toEqual({});
+    expect(collectNewAttributes(plan, {}, [])).toEqual([]);
+  });
+
+  it('phone parts XLSX: Brand and Model as user-assigned filterable attributes', () => {
+    const headers = ['Category', 'Item', 'Brand', 'Model', 'Description', 'QTY', 'Price', 'Image URL'];
+    const autoMapping = guessMapping(headers, []);
+
+    expect(autoMapping[0]).toBe('category');
+    expect(autoMapping[1]).toBe('name');
+    expect(autoMapping[2]).toBe('ignore');
+    expect(autoMapping[3]).toBe('ignore');
+    expect(autoMapping[4]).toBe('description');
+    expect(autoMapping[5]).toBe('stock');
+    expect(autoMapping[6]).toBe('price');
+    expect(autoMapping[7]).toBe('image');
+
+    const userMapping: Mapping = [
+      'category', 'name', 'attribute:brand', 'attribute:model',
+      'description', 'stock', 'price', 'image',
+    ];
+
+    const sheet = table(headers, [
+      ['Cases', 'Phone case', 'Samsung', 'S24', 'Slim fit', '50', '299', 'https://img.test/case.jpg'],
+      ['Cases', 'Phone case', 'Apple', 'iPhone 15', 'Slim fit', '30', '349', ''],
+      ['Cables', 'USB-C Cable', 'Baseus', '1m', 'Fast charge', '100', '89', ''],
+    ]);
+
+    const rows = readRows(sheet, userMapping);
+    expect(rows[0].attributes).toEqual({ brand: 'Samsung', model: 'S24' });
+    expect(rows[1].attributes).toEqual({ brand: 'Apple', model: 'iPhone 15' });
+
+    const plan = buildPlan(rows, catalogue(), COUNTED);
+    expect(plan.counts.newProducts).toBe(2);
+
+    const newAttrs = collectNewAttributes(plan, { brand: 'Brand', model: 'Model' }, []);
+    expect(newAttrs).toHaveLength(2);
+    expect(newAttrs.find((a) => a.name === 'brand')!.options).toContain('Samsung');
+    expect(newAttrs.find((a) => a.name === 'brand')!.options).toContain('Apple');
+  });
+
+  it('shoe shop CSV: Size and Colour auto-match from existing palette', () => {
+    const headers = ['Product', 'Size', 'Colour', 'Price', 'Stock', 'SKU'];
+    const mapping = guessMapping(headers, SHOES);
+
+    expect(mapping).toEqual(['name', 'attribute:size', 'attribute:colour', 'price', 'stock', 'sku']);
+
+    const sheet = table(headers, [
+      ['Sneaker', '8', 'white', '899', '4', 'SN-8-W'],
+      ['Sneaker', '9', 'black', '949', '3', 'SN-9-B'],
+      ['Boot', '10', 'brown', '1299', '2', 'BT-10-BR'],
+    ]);
+
+    const rows = readRows(sheet, mapping);
+    expect(rows[0].attributes).toEqual({ size: '8', colour: 'white' });
+
+    const plan = buildPlan(rows, catalogue(), COUNTED);
+    expect(plan.counts.newProducts).toBe(2);
+
+    const newAttrs = collectNewAttributes(plan, { size: 'Size', colour: 'Colour' }, SHOES);
+    expect(newAttrs).toEqual([]);
+  });
+
+  it('shoe shop first import: no palette, user assigns Size and Colour', () => {
+    const headers = ['Product', 'Size', 'Colour', 'Price', 'Stock', 'SKU'];
+    const mapping = guessMapping(headers, []);
+
+    expect(mapping[1]).toBe('ignore');
+    expect(mapping[2]).toBe('ignore');
+
+    const userMapping: Mapping = ['name', 'attribute:size', 'attribute:colour', 'price', 'stock', 'sku'];
+    const sheet = table(headers, [
+      ['Sneaker', '8', 'white', '899', '4', 'SN-8-W'],
+      ['Sneaker', '9', 'black', '949', '3', 'SN-9-B'],
+    ]);
+
+    const rows = readRows(sheet, userMapping);
+    const plan = buildPlan(rows, catalogue(), COUNTED);
+
+    const newAttrs = collectNewAttributes(plan, { size: 'Size', colour: 'Colour' }, []);
+    expect(newAttrs).toHaveLength(2);
+    expect(newAttrs.find((a) => a.name === 'size')!.options).toEqual(['8', '9']);
+    expect(newAttrs.find((a) => a.name === 'colour')!.options).toEqual(['black', 'white']);
+  });
+
+  it('re-import with saved palette auto-matches previously learned attributes', () => {
+    const learned: TenantAttribute[] = [
+      { name: 'brand', label: 'Brand', options: ['Samsung', 'Apple'] },
+      { name: 'model', label: 'Model', options: ['S24', 'iPhone 15'] },
+    ];
+
+    const headers = ['Category', 'Item', 'Brand', 'Model', 'Price'];
+    const mapping = guessMapping(headers, learned);
+
+    expect(mapping).toEqual(['category', 'name', 'attribute:brand', 'attribute:model', 'price']);
   });
 });

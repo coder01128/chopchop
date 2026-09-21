@@ -82,6 +82,17 @@
   color: var(--ink);
 }
 
+.attrLabel {
+  width: 100%;
+  box-sizing: border-box;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 0.4rem 0.5rem;
+  color: var(--ink);
+  font-size: 0.88rem;
+}
+
 .note {
   margin: 0;
   border: 1px dashed var(--line);
