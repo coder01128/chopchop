@@ -138,11 +138,12 @@ describe('guessMapping', () => {
     expect(mapping).toEqual(['name', 'attribute:size', 'attribute:colour', 'price']);
   });
 
-  it('names every column it is ignoring', () => {
+  it('defaults unmapped columns to filterable attributes', () => {
     const sheet = table(['Product', 'Price', 'Supplier', 'Notes'], []);
     const mapping = guessMapping(sheet.headers, []);
-    // "Notes" maps to description now, so only "Supplier" is ignored.
-    expect(ignoredHeaders(sheet, mapping)).toEqual(['Supplier']);
+    // "Notes" maps to description; "Supplier" defaults to attribute:supplier.
+    expect(mapping).toEqual(['name', 'price', 'attribute:supplier', 'description']);
+    expect(ignoredHeaders(sheet, mapping)).toEqual([]);
   });
 
   it('will not proceed without a name and a price column', () => {
@@ -772,8 +773,8 @@ describe('parseFile', () => {
     const rows = readRows(table, mapping);
     const plan = buildPlan(rows, catalogue(), AVAILABILITY);
 
-    expect(mapping).toEqual(['name', 'attribute:unit', 'price', 'category', 'ignore']);
-    expect(ignoredHeaders(table, mapping)).toEqual(['Supplier']);
+    expect(mapping).toEqual(['name', 'attribute:unit', 'price', 'category', 'attribute:supplier']);
+    expect(ignoredHeaders(table, mapping)).toEqual([]);
 
     // Two rows share a name, so two products with three variants between them.
     expect(plan.items).toHaveLength(2);
@@ -929,8 +930,8 @@ describe('dynamic schema validation', () => {
 
     expect(autoMapping[0]).toBe('category');
     expect(autoMapping[1]).toBe('name');
-    expect(autoMapping[2]).toBe('ignore');
-    expect(autoMapping[3]).toBe('ignore');
+    expect(autoMapping[2]).toBe('attribute:brand');
+    expect(autoMapping[3]).toBe('attribute:model');
     expect(autoMapping[4]).toBe('description');
     expect(autoMapping[5]).toBe('stock');
     expect(autoMapping[6]).toBe('price');
@@ -982,12 +983,13 @@ describe('dynamic schema validation', () => {
     expect(newAttrs).toEqual([]);
   });
 
-  it('shoe shop first import: no palette, user assigns Size and Colour', () => {
+  it('shoe shop first import: no palette, Size and Colour default to attributes', () => {
     const headers = ['Product', 'Size', 'Colour', 'Price', 'Stock', 'SKU'];
     const mapping = guessMapping(headers, []);
 
-    expect(mapping[1]).toBe('ignore');
-    expect(mapping[2]).toBe('ignore');
+    // Without a palette, unknown columns default to filterable attributes.
+    expect(mapping[1]).toBe('attribute:size');
+    expect(mapping[2]).toBe('attribute:colour');
 
     const userMapping: Mapping = ['name', 'attribute:size', 'attribute:colour', 'price', 'stock', 'sku'];
     const sheet = table(headers, [

@@ -178,6 +178,15 @@ export function guessMapping(headers: string[], palette: TenantAttribute[]): Map
     }
   }
 
+  // Any column still unmapped defaults to a filterable attribute keyed on the
+  // normalised header. The seller can switch it to Ignore on the mapping screen.
+  headers.forEach((header, index) => {
+    if (mapping[index] !== 'ignore') return;
+    const value = normalise(header);
+    if (value === '') return;
+    mapping[index] = attributeTarget(value);
+  });
+
   return mapping;
 }
 
