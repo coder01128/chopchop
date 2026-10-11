@@ -1,7 +1,13 @@
 import { useCallback, useEffect, useState } from 'react';
 import { getSupabaseClient, useTenant } from '@chopchop/shared';
 import { useInstallState } from '../pwa/install';
-import { loadListed, setListed } from './settings-data';
+import {
+  CatalogueDeleteError,
+  deleteCatalogue,
+  loadListed,
+  setListed,
+  type CatalogueDeleteResult,
+} from './settings-data';
 import styles from './Settings.module.css';
 
 /**
@@ -56,6 +62,7 @@ export function Settings() {
 
       <DirectoryListing tenantId={tenant.id} />
       <InstallCard />
+      <DeleteCatalogue tenantId={tenant.id} />
 
       <p className="cc-eyebrow">Read only for now</p>
       <dl className={styles.table}>
@@ -180,6 +187,178 @@ function InstallCard() {
           </button>
         )}
       </div>
+    </section>
+  );
+}
+
+/** Typed to confirm. Not the business name: it must work for every tenant, and "DELETE" is what the seller is about to do. */
+const CONFIRM_WORD = 'DELETE';
+
+function plural(count: number, one: string, many: string): string {
+  return `${count} ${count === 1 ? one : many}`;
+}
+
+function describeFailure(error: unknown): string {
+  if (error instanceof CatalogueDeleteError) {
+    if (error.kind === 'open-orders') {
+      return `${plural(error.openOrders, 'order is', 'orders are')} still open. Complete or dismiss ${
+        error.openOrders === 1 ? 'it' : 'them'
+      } in Orders, then try again.`;
+    }
+    if (error.kind === 'not-owner') return 'Only the owner of this business can delete the catalogue.';
+  }
+  return 'Could not delete the catalogue. Check your connection and try again.';
+}
+
+/**
+ * Wipe the catalogue.
+ *
+ * Irreversible, so it sits under its own heading, asks for a typed word rather
+ * than a click, and uses a centred dialog (the same pattern as the category and
+ * variant confirmations). Orders are untouched; the dialog says so, because
+ * that is the first thing a seller needs to know before pressing it.
+ */
+function DeleteCatalogue({ tenantId }: { tenantId: string }) {
+  const client = getSupabaseClient();
+
+  const [open, setOpen] = useState(false);
+  const [typed, setTyped] = useState('');
+  const [working, setWorking] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [result, setResult] = useState<CatalogueDeleteResult | null>(null);
+
+  const armed = typed.trim() === CONFIRM_WORD;
+
+  useEffect(() => {
+    if (!open || working) return;
+    function onKey(event: KeyboardEvent) {
+      if (event.key === 'Escape') setOpen(false);
+    }
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [open, working]);
+
+  function begin() {
+    setTyped('');
+    setError(null);
+    setResult(null);
+    setOpen(true);
+  }
+
+  async function confirm() {
+    if (!armed || working) return;
+    setWorking(true);
+    setError(null);
+    try {
+      setResult(await deleteCatalogue(client, tenantId));
+      setOpen(false);
+    } catch (caught) {
+      setError(describeFailure(caught));
+    } finally {
+      setWorking(false);
+    }
+  }
+
+  return (
+    <section className={styles.card}>
+      <div className={styles.cardHead}>
+        <div>
+          <h2 className={styles.cardTitle}>Delete all catalogue data</h2>
+          <p className={styles.cardBody}>
+            Removes every product, variant, category, photo and pending import for this business,
+            so you can start again from an empty catalogue. Your orders are kept. This cannot be
+            undone.
+          </p>
+        </div>
+
+        <button type="button" className={styles.danger} onClick={begin}>
+          Delete everything
+        </button>
+      </div>
+
+      {result && (
+        <div className={styles.cardResult} role="status">
+          <p>
+            Deleted {plural(result.itemsDeleted, 'product', 'products')} and{' '}
+            {plural(result.categoriesDeleted, 'category', 'categories')}.
+          </p>
+          {result.itemsKept > 0 && (
+            <p>
+              {plural(result.itemsKept, 'product appears', 'products appear')} in past orders, so{' '}
+              {result.itemsKept === 1 ? 'it was' : 'they were'} hidden from the shop and kept. Order
+              history still shows what was sold.
+            </p>
+          )}
+          {result.photosFailed > 0 && (
+            <p>{plural(result.photosFailed, 'photo', 'photos')} could not be removed.</p>
+          )}
+        </div>
+      )}
+
+      {open && (
+        <div className={styles.backdrop} role="presentation">
+          <div
+            className={styles.dialog}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="delete-catalogue-title"
+          >
+            <h3 id="delete-catalogue-title" className={styles.dialogTitle}>
+              Delete all catalogue data?
+            </h3>
+            <p className={styles.dialogBody}>
+              This permanently deletes every product, variant, category, photo and pending import.
+              Your shop will be empty.
+            </p>
+            <p className={styles.dialogBody}>
+              Orders are not deleted. A product that appears in a past order cannot be erased
+              without breaking that order, so it is hidden from the shop and kept instead.
+            </p>
+
+            <label className={styles.confirmLabel} htmlFor="delete-catalogue-confirm">
+              Type {CONFIRM_WORD} to confirm
+            </label>
+            <input
+              id="delete-catalogue-confirm"
+              className={styles.confirmInput}
+              autoFocus
+              autoComplete="off"
+              spellCheck={false}
+              value={typed}
+              disabled={working}
+              onChange={(event) => setTyped(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter') void confirm();
+              }}
+            />
+
+            {error && (
+              <p className={styles.cardError} role="alert">
+                {error}
+              </p>
+            )}
+
+            <div className={styles.dialogActions}>
+              <button
+                type="button"
+                className={styles.secondary}
+                disabled={working}
+                onClick={() => setOpen(false)}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className={styles.danger}
+                disabled={!armed || working}
+                onClick={() => void confirm()}
+              >
+                {working ? 'Deleting…' : 'Delete everything'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 }

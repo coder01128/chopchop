@@ -401,6 +401,7 @@ export type Database = {
         Args: { p_lines?: Json; p_order_id: string; p_tenant_id: string }
         Returns: Json
       }
+      delete_catalogue: { Args: { p_tenant_id: string }; Returns: Json }
       is_active_tenant: { Args: { p_tenant_id: string }; Returns: boolean }
       is_anonymous_user: { Args: never; Returns: boolean }
       is_buyer_order: { Args: { p_order_id: string }; Returns: boolean }

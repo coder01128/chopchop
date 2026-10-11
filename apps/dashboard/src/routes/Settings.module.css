@@ -85,6 +85,108 @@
   cursor: pointer;
 }
 
+.danger,
+.secondary {
+  border-radius: var(--radius);
+  padding: 0.5rem 0.85rem;
+  font-family: var(--mono);
+  font-size: var(--text-xs);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-weight: 700;
+  cursor: pointer;
+  background: transparent;
+  white-space: nowrap;
+}
+
+.danger {
+  border: 1px solid var(--ui-warn);
+  color: var(--ui-warn);
+}
+
+.secondary {
+  border: 1px solid var(--line);
+  color: var(--ink);
+}
+
+.danger:disabled,
+.secondary:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.cardResult {
+  margin-top: 0.8rem;
+  padding-top: 0.8rem;
+  border-top: 1px solid var(--line);
+  font-size: 0.88rem;
+}
+
+.cardResult p {
+  margin: 0 0 0.3rem;
+}
+
+/* Centred, never a bottom sheet. */
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: rgba(0, 0, 0, 0.6);
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+}
+
+.dialog {
+  width: 100%;
+  max-width: 28rem;
+  max-height: calc(100vh - 2rem);
+  overflow-y: auto;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 1.1rem 1.2rem;
+}
+
+.dialogTitle {
+  margin: 0 0 0.6rem;
+  font-size: 1.02rem;
+}
+
+.dialogBody {
+  margin: 0 0 0.6rem;
+  font-size: 0.88rem;
+}
+
+.confirmLabel {
+  display: block;
+  margin: 0.9rem 0 0.3rem;
+  font-family: var(--mono);
+  font-size: var(--text-xs);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ui-label);
+}
+
+.confirmInput {
+  width: 100%;
+  box-sizing: border-box;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 0.5rem 0.6rem;
+  color: var(--ink);
+  font-family: var(--mono);
+  font-size: 0.95rem;
+}
+
+.dialogActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
 /* Wide enough for the control to sit beside its explanation rather than under
    it — below this it stacks, which is the phone case. */
 @media (min-width: 40rem) {
